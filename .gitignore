@@ -1,0 +1,7 @@
+*.bin
+*.autosave
+*.hex
+*.rar
+*.user
+*.txt
+builds/
