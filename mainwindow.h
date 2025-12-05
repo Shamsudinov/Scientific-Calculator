@@ -6,6 +6,10 @@
 #include <QDebug>
 #include <QPushButton>
 
+#include <stdexcept>
+
+#include "expressioncalculator.h"
+
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
 QT_END_NAMESPACE
@@ -31,10 +35,6 @@ public:
 
 public slots:
 
-    void pbtn_sum_clicked();
-    void pbtn_diff_clicked();
-    void pbtn_div_clicked();
-    void pbtn_mult_clicked();
     void onBtnClearClicked();
 
 protected:
@@ -42,6 +42,7 @@ protected:
 
 private:
     void appendDigit(int digit);
+    void appendOperator(const QString &op);
 
     Ui::MainWindow *ui;
     QString text_buffer;

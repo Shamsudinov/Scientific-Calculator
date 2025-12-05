@@ -20,10 +20,19 @@ MainWindow::MainWindow(QWidget *parent)
         });
     }
 
-    connect(ui->pbtn_sum,&QPushButton::clicked,this,&MainWindow::pbtn_sum_clicked);
-    connect(ui->pbtn_diff,&QPushButton::clicked,this,&MainWindow::pbtn_diff_clicked);
-    connect(ui->pbtn_div,&QPushButton::clicked,this,&MainWindow::pbtn_div_clicked);
-    connect(ui->pbtn_mult,&QPushButton::clicked,this,&MainWindow::pbtn_mult_clicked);
+    // Подключаем операторы
+    connect(ui->pbtn_sum, &QPushButton::clicked, [this]() {
+        appendOperator("+");
+    });
+    connect(ui->pbtn_diff, &QPushButton::clicked, [this]() {
+        appendOperator("-");
+    });
+    connect(ui->pbtn_mult, &QPushButton::clicked, [this]() {
+        appendOperator("*");
+    });
+    connect(ui->pbtn_div, &QPushButton::clicked, [this]() {
+        appendOperator("/");
+    });
 
     connect(ui->pbtn_clear,&QPushButton::clicked,this,&MainWindow::onBtnClearClicked);
 }
@@ -31,26 +40,6 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     delete ui;
-}
-
-void MainWindow::pbtn_sum_clicked(){
-    text_buffer += "+";
-    ui->browser->setText(text_buffer);
-}
-
-void MainWindow::pbtn_diff_clicked(){
-    text_buffer += "-";
-    ui->browser->setText(text_buffer);
-}
-
-void MainWindow::pbtn_div_clicked(){
-    text_buffer += "/";
-    ui->browser->setText(text_buffer);
-}
-
-void MainWindow::pbtn_mult_clicked(){
-    text_buffer += "*";
-    ui->browser->setText(text_buffer);
 }
 
 void MainWindow::onBtnClearClicked(){
@@ -72,22 +61,10 @@ void MainWindow::keyPressEvent(QKeyEvent *e){
     case Qt::Key_7:{ appendDigit(BTN_7); break; }
     case Qt::Key_8:{ appendDigit(BTN_8); break; }
     case Qt::Key_9:{ appendDigit(BTN_9); break; }
-    case Qt::Key_Plus:{
-        text_buffer += "+";
-        break;
-    }
-    case Qt::Key_Minus:{
-        text_buffer += "-";
-        break;
-    }
-    case Qt::Key_Slash:{
-        text_buffer += "/";
-        break;
-    }
-    case Qt::Key_Asterisk:{
-        text_buffer += "*";
-        break;
-    }
+    case Qt::Key_Plus:{ appendOperator("+"); break; }
+    case Qt::Key_Minus:{ appendOperator("-"); break; }
+    case Qt::Key_Slash:{ appendOperator("/"); break; }
+    case Qt::Key_Asterisk:{ appendOperator("*"); break; }
 
     }
 
@@ -100,7 +77,10 @@ void MainWindow::appendDigit(int digit){
     ui->browser->setText(text_buffer);
 }
 
-
+void MainWindow::appendOperator(const QString &op){
+    text_buffer += op;
+    ui->browser->setText(text_buffer);
+}
 
 
 
