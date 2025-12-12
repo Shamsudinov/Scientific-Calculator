@@ -41,10 +41,12 @@ protected:
    virtual void keyPressEvent(QKeyEvent *event);
 
 private:
-    void appendDigit(int digit);
-    void appendOperator(const QString &op);
+    void appendDigit(int);
+    void appendOperator(const QString &);
+    void calculateResult();
 
     Ui::MainWindow *ui;
     QString text_buffer;
+    ExpressionCalculator calculator;
 };
 #endif // MAINWINDOW_H

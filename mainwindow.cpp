@@ -65,6 +65,9 @@ void MainWindow::keyPressEvent(QKeyEvent *e){
     case Qt::Key_Minus:{ appendOperator("-"); break; }
     case Qt::Key_Slash:{ appendOperator("/"); break; }
     case Qt::Key_Asterisk:{ appendOperator("*"); break; }
+    case Qt::Key_Enter:{ calculateResult(); break; }
+    case Qt::Key_Equal:{ calculateResult(); break; }
+
 
     }
 
@@ -79,6 +82,13 @@ void MainWindow::appendDigit(int digit){
 
 void MainWindow::appendOperator(const QString &op){
     text_buffer += op;
+    ui->browser->setText(text_buffer);
+}
+
+void MainWindow::calculateResult(){
+
+    double result = calculator.calculate(text_buffer.toStdString());
+    text_buffer = QString::number(result);
     ui->browser->setText(text_buffer);
 }
 
