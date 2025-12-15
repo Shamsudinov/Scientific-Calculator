@@ -35,6 +35,44 @@ MainWindow::MainWindow(QWidget *parent)
     });
 
     connect(ui->pbtn_clear,&QPushButton::clicked,this,&MainWindow::onBtnClearClicked);
+
+    // Создаем группу для тригонометрических функций
+    QGroupBox *functionsGroup = new QGroupBox("Функции", this);
+    functionsGroup->setGeometry(270, 10, 300, 331);
+
+    QGridLayout *functionsLayout = new QGridLayout(functionsGroup);
+
+    // Список функций с их отображаемыми именами
+    QVector<QPair<QString, QString>> functions = {
+        {"sin(", "sin"},
+        {"cos(", "cos"},
+        {"tan(", "tan"},
+        {"asin(", "asin"},
+        {"acos(", "acos"},
+        {"atan(", "atan"},
+        {"sinh(", "sinh"},
+        {"cosh(", "cosh"},
+        {"tanh(", "tanh"},
+        {"log(", "log"},
+        {"ln(", "ln"},
+        {"exp(", "exp"},
+        {"sqrt(", "√"},
+        {"abs(", "|x|"},
+        {"pi", "π"},
+        {"e", "e"}
+    };
+
+    // Создаем кнопки для функций
+    for (int i = 0; i < functions.size(); ++i) {
+        QPushButton *btn = new QPushButton(functions[i].second, functionsGroup);
+        btn->setFixedSize(60, 40);
+        connect(btn, &QPushButton::clicked, [this, func = functions[i].first]() {
+            appendFunction(func);
+        });
+        functionsLayout->addWidget(btn, i / 3, i % 3);
+    }
+
+    functionsGroup->setLayout(functionsLayout);
 }
 
 MainWindow::~MainWindow()
@@ -67,6 +105,14 @@ void MainWindow::keyPressEvent(QKeyEvent *e){
     case Qt::Key_Asterisk:{ appendOperator("*"); break; }
     case Qt::Key_Enter:{ calculateResult(); break; }
     case Qt::Key_Equal:{ calculateResult(); break; }
+    case Qt::Key_ParenLeft:{ appendOperator("("); break; }
+    case Qt::Key_ParenRight:{ appendOperator(")"); break; }
+    case Qt::Key_P:{
+         if (e->modifiers() & Qt::ControlModifier) {
+             appendFunction("pi");
+         }
+         break;
+     }
 
 
     }
@@ -85,11 +131,25 @@ void MainWindow::appendOperator(const QString &op){
     ui->browser->setText(text_buffer);
 }
 
+void MainWindow::appendFunction(const QString &func){
+
+    if (func == "pi" || func == "e") {
+        text_buffer += func;
+    } else {
+        text_buffer += func;
+    }
+    ui->browser->setText(text_buffer);
+}
+
 void MainWindow::calculateResult(){
 
-    double result = calculator.calculate(text_buffer.toStdString());
-    text_buffer = QString::number(result);
-    ui->browser->setText(text_buffer);
+    try {
+        double result = calculator.calculate(text_buffer.toStdString());
+        text_buffer = QString::number(result);
+        ui->browser->setText(text_buffer);
+    } catch (const std::exception& e) {
+        ui->browser->setText("Ошибка: " + QString(e.what()));
+    }
 }
 
 

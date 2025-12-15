@@ -5,6 +5,8 @@
 #include <QKeyEvent>
 #include <QDebug>
 #include <QPushButton>
+#include <QGroupBox>
+#include <QGridLayout>
 
 #include <stdexcept>
 
@@ -43,6 +45,7 @@ protected:
 private:
     void appendDigit(int);
     void appendOperator(const QString &);
+    void appendFunction(const QString &func);
     void calculateResult();
 
     Ui::MainWindow *ui;
