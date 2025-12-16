@@ -36,11 +36,11 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(ui->pbtn_clear,&QPushButton::clicked,this,&MainWindow::onBtnClearClicked);
 
-    // Создаем группу для тригонометрических функций
-    QGroupBox *functionsGroup = new QGroupBox("Функции", this);
-    functionsGroup->setGeometry(270, 10, 300, 331);
-
-    QGridLayout *functionsLayout = new QGridLayout(functionsGroup);
+    QList<QPushButton*> func_buttons_list = {
+        ui->pbtn_sin, ui->pbtn_cos, ui->pbtn_tan, ui->pbtn_asin, ui->pbtn_acos,
+        ui->pbtn_atan, ui->pbtn_sinh, ui->pbtn_cosh, ui->pbtn_tanh, ui->pbtn_log,ui->pbtn_ln,ui->pbtn_exp,
+        ui->pbtn_sqrt,ui->pbtn_mod,ui->pbtn_pi,ui->pbtn_exp
+    };
 
     // Список функций с их отображаемыми именами
     QVector<QPair<QString, QString>> functions = {
@@ -63,16 +63,11 @@ MainWindow::MainWindow(QWidget *parent)
     };
 
     // Создаем кнопки для функций
-    for (int i = 0; i < functions.size(); ++i) {
-        QPushButton *btn = new QPushButton(functions[i].second, functionsGroup);
-        btn->setFixedSize(60, 40);
-        connect(btn, &QPushButton::clicked, [this, func = functions[i].first]() {
+    for (int i = 0; i < func_buttons_list.size(); ++i) {
+        connect(func_buttons_list[i], &QPushButton::clicked, [this, func = functions[i].first]() {
             appendFunction(func);
         });
-        functionsLayout->addWidget(btn, i / 3, i % 3);
     }
-
-    functionsGroup->setLayout(functionsLayout);
 }
 
 MainWindow::~MainWindow()
