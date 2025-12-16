@@ -49,9 +49,15 @@ private:
     void appendFunction(const QString &);
     void calculateResult();
     void updateStatusBar(const QString&);
+    // ... существующие переменные ...
+    void addToHistory(const QString&, double);
+    void clearHistory();
+    void useHistoryItem();
 
     Ui::MainWindow *ui;
     QString text_buffer;
     ExpressionCalculator calculator;
+    // Добавьте константы для истории
+    const int MAX_HISTORY_ITEMS = 20;
 };
 #endif // MAINWINDOW_H

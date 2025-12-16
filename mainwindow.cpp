@@ -81,6 +81,10 @@ MainWindow::MainWindow(QWidget *parent)
             appendFunction(func);
         });
     }
+
+    connect(ui->pbtn_clear_history, &QPushButton::clicked, this, &MainWindow::clearHistory);
+    connect(ui->pbtn_use_history, &QPushButton::clicked, this, &MainWindow::useHistoryItem);
+    connect(ui->historyList, &QListWidget::itemDoubleClicked, this, &MainWindow::useHistoryItem);
 }
 
 MainWindow::~MainWindow()
@@ -208,11 +212,56 @@ void MainWindow::appendFunction(const QString &func){
 void MainWindow::calculateResult(){
 
     try {
-        double result = calculator.calculate(text_buffer.toStdString());
-        text_buffer = QString::number(result);
+        std::string expression = text_buffer.toStdString();
+        double result = calculator.calculate(expression);
+
+        // Сохраняем в историю
+        addToHistory(text_buffer, result);
+
+        // Показываем результат
+        text_buffer = QString::number(result, 'g', 12); // 12 знаков точности
         ui->browser->setText(text_buffer);
+        updateStatusBar("Вычислено успешно");
     } catch (const std::exception& e) {
         ui->browser->setText("Ошибка: " + QString(e.what()));
+        updateStatusBar("Ошибка вычисления");
+    }
+}
+
+// Добавьте новые функции управления историей:
+void MainWindow::addToHistory(const QString& expression, double result) {
+    // Форматируем запись для истории
+    QString historyItem = QString("%1 = %2")
+                         .arg(expression)
+                         .arg(result, 0, 'g', 12);
+
+    // Добавляем в начало списка
+    ui->historyList->insertItem(0, historyItem);
+
+    // Ограничиваем максимальное количество записей
+    if (ui->historyList->count() > MAX_HISTORY_ITEMS) {
+        delete ui->historyList->takeItem(MAX_HISTORY_ITEMS);
+    }
+}
+
+void MainWindow::clearHistory() {
+    ui->historyList->clear();
+    updateStatusBar("История очищена");
+}
+
+void MainWindow::useHistoryItem() {
+    QListWidgetItem* item = ui->historyList->currentItem();
+    if (item) {
+        QString text = item->text();
+        // Ищем знак "=" в записи
+        int eqPos = text.indexOf("=");
+        if (eqPos != -1) {
+            // Берем часть до "=" (выражение)
+            QString expression = text.left(eqPos - 1).trimmed();
+            text_buffer = expression;
+            ui->browser->setText(text_buffer);
+            updateStatusBar("Выражение загружено из истории");
+        }
     }
 }
 

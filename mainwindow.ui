@@ -103,6 +103,7 @@ QTextBrowser {
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_3">
+
     <item row="0" column="0">
      <widget class="QGroupBox" name="groupBox">
       <property name="title">
@@ -408,6 +409,64 @@ QTextBrowser {
        </item>
       </layout>
      </widget>
+    </item>
+    <item row="0" column="2">
+        <widget class="QGroupBox" name="groupBox_history">
+            <property name="title">
+                <string>История операций</string>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout">
+                <item>
+                    <widget class="QListWidget" name="historyList">
+                        <property name="styleSheet">
+                            <string notr="true">QListWidget {
+        background-color: #1e1e1e;
+        color: #ffffff;
+        border: 2px solid #4a4a4a;
+        border-radius: 8px;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 14px;
+        padding: 5px;
+    }
+
+    QListWidget::item {
+        padding: 5px;
+        border-bottom: 1px solid #4a4a4a;
+    }
+
+    QListWidget::item:selected {
+        background-color: #1976d2;
+        color: white;
+    }</string>
+                        </property>
+                    </widget>
+                </item>
+                <item>
+                    <layout class="QHBoxLayout" name="horizontalLayout">
+                        <item>
+                            <widget class="QPushButton" name="pbtn_clear_history">
+                                <property name="text">
+                                    <string>Очистить историю</string>
+                                </property>
+                                <property name="styleSheet">
+                                    <string notr="true">background-color: #d32f2f; color: white;</string>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QPushButton" name="pbtn_use_history">
+                                <property name="text">
+                                    <string>Использовать</string>
+                                </property>
+                                <property name="styleSheet">
+                                    <string notr="true">background-color: #1976d2; color: white;</string>
+                                </property>
+                            </widget>
+                        </item>
+                    </layout>
+                </item>
+            </layout>
+        </widget>
     </item>
    </layout>
   </widget>
