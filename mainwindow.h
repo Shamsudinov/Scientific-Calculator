@@ -7,7 +7,10 @@
 #include <QPushButton>
 #include <QGroupBox>
 #include <QGridLayout>
-
+#include <QTimer>
+#include <QLineEdit>
+#include <QLabel>
+#include <QListWidgetItem>
 #include <stdexcept>
 
 #include "expressioncalculator.h"
@@ -40,6 +43,10 @@ public slots:
     void onBtnClearClicked();
     void onBtnDotClicked();
     void onBtnBackspaceClicked();
+    void onHistoryItemChanged(QListWidgetItem*);
+    void onHistoryItemDoubleClicked(QListWidgetItem*);
+    void onUpdateTimerTimeout();
+    void onHistoryEditTextChanged(const QString&);
 protected:
    virtual void keyPressEvent(QKeyEvent *);
 
@@ -53,11 +60,28 @@ private:
     void addToHistory(const QString&, double);
     void clearHistory();
     void useHistoryItem();
+    void startDelayedCalculation();
+     void onHistoryTextChanged(const QString&);
+     QString formatHistoryItem(const QString&, double) const;
+     void calculateEditedExpression();
+     void editHistoryItem(int);
+     void updateHistoryDisplay();
+     void recalculateHistoryItem();
 
     Ui::MainWindow *ui;
+
+    struct HistoryItem {
+        QString expression;
+        double result;
+        QString originalText;
+    };
+
+    QVector<HistoryItem> historyData;
+    QTimer* updateTimer; // Таймер для отложенного перерасчета
     QString text_buffer;
     ExpressionCalculator calculator;
     // Добавьте константы для истории
     const int MAX_HISTORY_ITEMS = 20;
+    const int UPDATE_DELAY_MS = 500; // Задержка перед перерасчетом в мс
 };
 #endif // MAINWINDOW_H

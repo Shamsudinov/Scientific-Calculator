@@ -410,6 +410,7 @@ QTextBrowser {
       </layout>
      </widget>
     </item>
+    <!-- Замените groupBox_history на более функциональную версию -->
     <item row="0" column="2">
         <widget class="QGroupBox" name="groupBox_history">
             <property name="title">
@@ -418,6 +419,15 @@ QTextBrowser {
             <layout class="QVBoxLayout" name="verticalLayout">
                 <item>
                     <widget class="QListWidget" name="historyList">
+                        <property name="alternatingRowColors">
+                            <bool>true</bool>
+                        </property>
+                        <property name="selectionMode">
+                            <enum>QAbstractItemView::SingleSelection</enum>
+                        </property>
+                        <property name="editTriggers">
+                            <enum>QAbstractItemView::DoubleClicked</enum>
+                        </property>
                         <property name="styleSheet">
                             <string notr="true">QListWidget {
         background-color: #1e1e1e;
@@ -432,11 +442,71 @@ QTextBrowser {
     QListWidget::item {
         padding: 5px;
         border-bottom: 1px solid #4a4a4a;
+        min-height: 40px;
     }
 
     QListWidget::item:selected {
         background-color: #1976d2;
         color: white;
+    }
+
+    QListWidget::item:editing {
+        background-color: #2d2d2d;
+        border: 1px solid #1976d2;
+    }</string>
+                        </property>
+                    </widget>
+                </item>
+                <item>
+                    <widget class="QLineEdit" name="historyEdit">
+                        <property name="styleSheet">
+                            <string notr="true">QLineEdit {
+        background-color: #1e1e1e;
+        color: #00ff00;
+        border: 2px solid #4a4a4a;
+        border-radius: 6px;
+        padding: 8px;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 14px;
+    }
+
+    QLineEdit:focus {
+        border-color: #1976d2;
+    }</string>
+                        </property>
+                        <property name="placeholderText">
+                            <string>Редактируйте выражение здесь...</string>
+                        </property>
+                    </widget>
+                </item>
+                <item>
+                    <widget class="QLabel" name="historyResultLabel">
+                        <property name="text">
+                            <string>Результат:</string>
+                        </property>
+                        <property name="styleSheet">
+                            <string notr="true">QLabel {
+        color: #ffffff;
+        font-weight: bold;
+        font-size: 14px;
+    }</string>
+                        </property>
+                    </widget>
+                </item>
+                <item>
+                    <widget class="QTextBrowser" name="historyResultBrowser">
+                        <property name="maximumHeight">
+                            <number>60</number>
+                        </property>
+                        <property name="styleSheet">
+                            <string notr="true">QTextBrowser {
+        background-color: #1e1e1e;
+        color: #00ff00;
+        border: 2px solid #4a4a4a;
+        border-radius: 6px;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 14px;
+        padding: 5px;
     }</string>
                         </property>
                     </widget>
@@ -446,10 +516,22 @@ QTextBrowser {
                         <item>
                             <widget class="QPushButton" name="pbtn_clear_history">
                                 <property name="text">
+                                    <string>Очистить</string>
+                                </property>
+                                <property name="toolTip">
                                     <string>Очистить историю</string>
                                 </property>
                                 <property name="styleSheet">
-                                    <string notr="true">background-color: #d32f2f; color: white;</string>
+                                    <string notr="true">QPushButton {
+        background-color: #d32f2f;
+        color: white;
+        padding: 8px;
+        font-size: 12px;
+    }
+
+    QPushButton:hover {
+        background-color: #f44336;
+    }</string>
                                 </property>
                             </widget>
                         </item>
@@ -458,8 +540,42 @@ QTextBrowser {
                                 <property name="text">
                                     <string>Использовать</string>
                                 </property>
+                                <property name="toolTip">
+                                    <string>Загрузить выбранное выражение в калькулятор</string>
+                                </property>
                                 <property name="styleSheet">
-                                    <string notr="true">background-color: #1976d2; color: white;</string>
+                                    <string notr="true">QPushButton {
+        background-color: #1976d2;
+        color: white;
+        padding: 8px;
+        font-size: 12px;
+    }
+
+    QPushButton:hover {
+        background-color: #2196f3;
+    }</string>
+                                </property>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QPushButton" name="pbtn_recalculate">
+                                <property name="text">
+                                    <string>Пересчитать</string>
+                                </property>
+                                <property name="toolTip">
+                                    <string>Пересчитать выбранное выражение</string>
+                                </property>
+                                <property name="styleSheet">
+                                    <string notr="true">QPushButton {
+        background-color: #388e3c;
+        color: white;
+        padding: 8px;
+        font-size: 12px;
+    }
+
+    QPushButton:hover {
+        background-color: #4caf50;
+    }</string>
                                 </property>
                             </widget>
                         </item>

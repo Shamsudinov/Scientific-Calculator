@@ -82,13 +82,25 @@ MainWindow::MainWindow(QWidget *parent)
         });
     }
 
+    // Настройка таймера для отложенного перерасчета
+    updateTimer = new QTimer();
+    updateTimer->setSingleShot(true);
+    connect(updateTimer, &QTimer::timeout, this, &MainWindow::onUpdateTimerTimeout);
+
+    // Подключаем сигналы истории
+    connect(ui->historyList, &QListWidget::itemChanged, this, &MainWindow::onHistoryItemChanged);
+    connect(ui->historyList, &QListWidget::itemDoubleClicked,this, &MainWindow::onHistoryItemDoubleClicked);
+    connect(ui->historyEdit, &QLineEdit::textChanged,this, &MainWindow::onHistoryEditTextChanged);
+
     connect(ui->pbtn_clear_history, &QPushButton::clicked, this, &MainWindow::clearHistory);
     connect(ui->pbtn_use_history, &QPushButton::clicked, this, &MainWindow::useHistoryItem);
     connect(ui->historyList, &QListWidget::itemDoubleClicked, this, &MainWindow::useHistoryItem);
+    connect(ui->pbtn_recalculate, &QPushButton::clicked,this, &MainWindow::recalculateHistoryItem);
 }
 
-MainWindow::~MainWindow()
-{
+MainWindow::~MainWindow(){
+
+    delete updateTimer;
     delete ui;
 }
 
@@ -219,7 +231,7 @@ void MainWindow::calculateResult(){
         addToHistory(text_buffer, result);
 
         // Показываем результат
-        text_buffer = QString::number(result, 'g', 12); // 12 знаков точности
+        text_buffer = QString::number(result, 'g', 12);
         ui->browser->setText(text_buffer);
         updateStatusBar("Вычислено успешно");
     } catch (const std::exception& e) {
@@ -230,37 +242,173 @@ void MainWindow::calculateResult(){
 
 // Добавьте новые функции управления историей:
 void MainWindow::addToHistory(const QString& expression, double result) {
-    // Форматируем запись для истории
-    QString historyItem = QString("%1 = %2")
-                         .arg(expression)
-                         .arg(result, 0, 'g', 12);
+    // Форматируем запись
+    HistoryItem item;
+    item.expression = expression;
+    item.result = result;
+    item.originalText = formatHistoryItem(expression, result);
 
-    // Добавляем в начало списка
-    ui->historyList->insertItem(0, historyItem);
+    // Добавляем в начало
+    historyData.prepend(item);
 
-    // Ограничиваем максимальное количество записей
-    if (ui->historyList->count() > MAX_HISTORY_ITEMS) {
-        delete ui->historyList->takeItem(MAX_HISTORY_ITEMS);
+    // Ограничиваем размер
+    if (historyData.size() > MAX_HISTORY_ITEMS) {
+        historyData.removeLast();
+    }
+
+    // Обновляем отображение
+    updateHistoryDisplay();
+}
+
+// Обновление отображения истории
+void MainWindow::updateHistoryDisplay() {
+    ui->historyList->clear();
+
+    for (const HistoryItem& item : historyData) {
+        QListWidgetItem* listItem = new QListWidgetItem(item.originalText);
+        listItem->setFlags(listItem->flags() | Qt::ItemIsEditable);
+        ui->historyList->addItem(listItem);
+    }
+
+    // Скрываем поля редактирования, если история пуста
+    bool hasHistory = !historyData.isEmpty();
+    ui->historyEdit->setVisible(hasHistory);
+    ui->historyResultLabel->setVisible(hasHistory);
+    ui->historyResultBrowser->setVisible(hasHistory);
+    ui->pbtn_recalculate->setVisible(hasHistory);
+}
+
+// Обработчик изменения текста в поле редактирования
+void MainWindow::onHistoryEditTextChanged(const QString& text) {
+    // Запускаем отложенный перерасчет
+    updateTimer->start(UPDATE_DELAY_MS);
+}
+
+// Таймер для отложенного перерасчета
+void MainWindow::onUpdateTimerTimeout() {
+    calculateEditedExpression();
+}
+
+// Перерасчет отредактированного выражения
+void MainWindow::calculateEditedExpression() {
+    QString expression = ui->historyEdit->text().trimmed();
+
+    if (expression.isEmpty()) {
+        ui->historyResultBrowser->setText("");
+        return;
+    }
+
+    try {
+        double result = calculator.calculate(expression.toStdString());
+        ui->historyResultBrowser->setText(QString::number(result, 'g', 12));
+        ui->historyResultBrowser->setStyleSheet(
+            "QTextBrowser { color: #00ff00; }"
+        );
+    } catch (const std::exception& e) {
+        ui->historyResultBrowser->setText("Ошибка: " + QString(e.what()));
+        ui->historyResultBrowser->setStyleSheet(
+            "QTextBrowser { color: #ff5555; }"
+        );
     }
 }
 
+// Форматирование элемента истории
+QString MainWindow::formatHistoryItem(const QString& expression, double result) const {
+    return QString("%1 = %2").arg(expression).arg(result, 0, 'g', 12);
+}
+
+// Очистка истории
 void MainWindow::clearHistory() {
+    historyData.clear();
     ui->historyList->clear();
+    ui->historyEdit->clear();
+    ui->historyResultBrowser->clear();
     updateStatusBar("История очищена");
 }
 
 void MainWindow::useHistoryItem() {
     QListWidgetItem* item = ui->historyList->currentItem();
     if (item) {
-        QString text = item->text();
-        // Ищем знак "=" в записи
-        int eqPos = text.indexOf("=");
-        if (eqPos != -1) {
-            // Берем часть до "=" (выражение)
-            QString expression = text.left(eqPos - 1).trimmed();
-            text_buffer = expression;
+        int row = ui->historyList->row(item);
+        if (row >= 0 && row < historyData.size()) {
+            text_buffer = historyData[row].expression;
             ui->browser->setText(text_buffer);
             updateStatusBar("Выражение загружено из истории");
+        }
+    }
+}
+
+// Пересчет выбранного элемента
+void MainWindow::recalculateHistoryItem() {
+    QListWidgetItem* item = ui->historyList->currentItem();
+    if (item) {
+        int row = ui->historyList->row(item);
+        if (row >= 0 && row < historyData.size()) {
+            try {
+                double result = calculator.calculate(historyData[row].expression.toStdString());
+                historyData[row].result = result;
+                historyData[row].originalText = formatHistoryItem(historyData[row].expression, result);
+
+                // Обновляем отображение
+                item->setText(historyData[row].originalText);
+                ui->historyResultBrowser->setText(QString::number(result, 'g', 12));
+                ui->historyResultBrowser->setStyleSheet(
+                    "QTextBrowser { color: #00ff00; }"
+                );
+
+                updateStatusBar("Выражение пересчитано");
+            } catch (const std::exception& e) {
+                ui->historyResultBrowser->setText("Ошибка: " + QString(e.what()));
+                ui->historyResultBrowser->setStyleSheet(
+                    "QTextBrowser { color: #ff5555; }"
+                );
+            }
+        }
+    }
+}
+
+// Двойной клик по элементу истории
+void MainWindow::onHistoryItemDoubleClicked(QListWidgetItem* item) {
+    if (!item) return;
+
+    int row = ui->historyList->row(item);
+    if (row >= 0 && row < historyData.size()) {
+        // Показываем выражение для редактирования
+        ui->historyEdit->setText(historyData[row].expression);
+        ui->historyResultBrowser->setText(QString::number(historyData[row].result, 'g', 12));
+        ui->historyResultBrowser->setStyleSheet(
+            "QTextBrowser { color: #00ff00; }"
+        );
+    }
+}
+
+// Изменение элемента в списке (прямое редактирование в списке)
+void MainWindow::onHistoryItemChanged(QListWidgetItem* item) {
+    if (!item) return;
+
+    int row = ui->historyList->row(item);
+    if (row >= 0 && row < historyData.size()) {
+        QString newText = item->text().trimmed();
+
+        // Пытаемся разобрать "выражение = результат"
+        int eqPos = newText.indexOf("=");
+        if (eqPos != -1) {
+            QString expr = newText.left(eqPos).trimmed();
+            QString resultStr = newText.mid(eqPos + 1).trimmed();
+
+            bool ok;
+            double result = resultStr.toDouble(&ok);
+
+            if (ok) {
+                // Сохраняем изменения
+                historyData[row].expression = expr;
+                historyData[row].result = result;
+                historyData[row].originalText = newText;
+
+                // Обновляем поле редактирования
+                ui->historyEdit->setText(expr);
+                ui->historyResultBrowser->setText(resultStr);
+            }
         }
     }
 }
