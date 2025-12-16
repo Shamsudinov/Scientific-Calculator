@@ -33,6 +33,12 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->pbtn_div, &QPushButton::clicked, [this]() {
         appendOperator("/");
     });
+    connect(ui->pbtn_lparen, &QPushButton::clicked, [this]() {
+        appendOperator("(");
+    });
+    connect(ui->pbtn_rparen, &QPushButton::clicked, [this]() {
+        appendOperator(")");
+    });
 
     connect(ui->pbtn_clear,&QPushButton::clicked,this,&MainWindow::onBtnClearClicked);
     // Подключаем backspace
