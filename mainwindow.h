@@ -38,15 +38,17 @@ public:
 public slots:
 
     void onBtnClearClicked();
-
+    void onBtnDotClicked();
+    void onBtnBackspaceClicked();
 protected:
-   virtual void keyPressEvent(QKeyEvent *event);
+   virtual void keyPressEvent(QKeyEvent *);
 
 private:
     void appendDigit(int);
     void appendOperator(const QString &);
-    void appendFunction(const QString &func);
+    void appendFunction(const QString &);
     void calculateResult();
+    void updateStatusBar(const QString&);
 
     Ui::MainWindow *ui;
     QString text_buffer;

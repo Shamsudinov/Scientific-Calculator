@@ -35,6 +35,13 @@ MainWindow::MainWindow(QWidget *parent)
     });
 
     connect(ui->pbtn_clear,&QPushButton::clicked,this,&MainWindow::onBtnClearClicked);
+    // Подключаем backspace
+    connect(ui->pbtn_backspace, &QPushButton::clicked, this, &MainWindow::onBtnBackspaceClicked);
+    // Подключаем равно
+    connect(ui->pbtn_equal, &QPushButton::clicked, this, &MainWindow::calculateResult);
+    // Подключаем точку
+    connect(ui->pbtn_dot, &QPushButton::clicked, this, &MainWindow::onBtnDotClicked);
+
 
     QList<QPushButton*> func_buttons_list = {
         ui->pbtn_sin, ui->pbtn_cos, ui->pbtn_tan, ui->pbtn_asin, ui->pbtn_acos,
@@ -80,6 +87,59 @@ void MainWindow::onBtnClearClicked(){
     ui->browser->setText(text_buffer);
 }
 
+void MainWindow::onBtnDotClicked(){
+    // Проверяем, не заканчивается ли выражение на точку
+        if (text_buffer.endsWith('.')) {
+            return; // Уже есть точка
+        }
+
+        // Проверяем, есть ли уже точка в текущем числе
+        bool hasDotInCurrentNumber = false;
+        int pos = text_buffer.length() - 1;
+
+        // Идем от конца строки к началу, пока находим цифры или точку
+        while (pos >= 0) {
+            QChar c = text_buffer[pos];
+            if (c.isDigit()) {
+                pos--;
+                continue;
+            } else if (c == '.') {
+                hasDotInCurrentNumber = true;
+                break;
+            } else {
+                // Наткнулись на не-цифру и не-точку (оператор, функция и т.д.)
+                break;
+            }
+        }
+
+        // Если в текущем числе уже есть точка, не добавляем новую
+        if (hasDotInCurrentNumber) {
+            return;
+        }
+
+        // Если строка пустая или последний символ - оператор/скобка, добавляем "0."
+        if (text_buffer.isEmpty() ||
+            text_buffer.endsWith('+') || text_buffer.endsWith('-') ||
+            text_buffer.endsWith('*') || text_buffer.endsWith('/') ||
+            text_buffer.endsWith('(') || text_buffer.endsWith('^') ||
+            text_buffer.endsWith(' ')) {
+            text_buffer += "0.";
+        } else {
+            // Просто добавляем точку
+            text_buffer += ".";
+        }
+
+        ui->browser->setText(text_buffer);
+}
+
+void MainWindow::onBtnBackspaceClicked(){
+    if (!text_buffer.isEmpty()) {
+        text_buffer.chop(1);
+        ui->browser->setText(text_buffer);
+        updateStatusBar("Удален последний символ");
+    }
+}
+
 void MainWindow::keyPressEvent(QKeyEvent *e){
 
     switch (e->key()) {
@@ -102,6 +162,9 @@ void MainWindow::keyPressEvent(QKeyEvent *e){
     case Qt::Key_Equal:{ calculateResult(); break; }
     case Qt::Key_ParenLeft:{ appendOperator("("); break; }
     case Qt::Key_ParenRight:{ appendOperator(")"); break; }
+    case Qt::Key_Period:
+    case Qt::Key_Comma:{ onBtnDotClicked(); break; }
+    case Qt::Key_Backspace:{ onBtnBackspaceClicked(); break; }
     case Qt::Key_P:{
          if (e->modifiers() & Qt::ControlModifier) {
              appendFunction("pi");
@@ -147,7 +210,9 @@ void MainWindow::calculateResult(){
     }
 }
 
-
+void MainWindow::updateStatusBar(const QString& message){
+    ui->statusbar->showMessage(message, 3000); // Показываем 3 секунды
+}
 
 
 
