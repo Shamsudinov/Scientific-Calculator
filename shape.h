@@ -13,7 +13,8 @@ enum ShapeType {
     EllipseShape,
     TriangleShape,
     PolygonShape,
-    FreehandShape
+    PolylineShape,
+    TextShape
 };
 
 class Shape {
@@ -37,6 +38,7 @@ public:
 
     QRectF boundingRect() const;
 
+    static QString shapeTypeToString(ShapeType type);
 private:
     ShapeType type;
     QVector<QPointF> points;

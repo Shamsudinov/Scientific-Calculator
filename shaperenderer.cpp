@@ -26,7 +26,7 @@ void ShapeRenderer::render(QPainter &painter, const Shape &shape) {
     case PolygonShape:
         renderPolygon(painter, shape);
         break;
-    case FreehandShape:
+    case PolylineShape:
         renderFreehand(painter, shape);
         break;
     default:

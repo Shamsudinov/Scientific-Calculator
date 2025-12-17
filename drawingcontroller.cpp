@@ -25,7 +25,7 @@ void DrawingController::initializeShapePoints(const QPointF &point) {
 void DrawingController::updateDrawing(const QPointF &point) {
     if (!drawingInProgress) return;
 
-    if (currentShape.getType() == FreehandShape ||
+    if (currentShape.getType() == PolylineShape ||
             currentShape.getType() == PolygonShape) {
         currentShape.addPoint(point);
     } else {

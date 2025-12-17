@@ -11,6 +11,9 @@
 #include <QLineEdit>
 #include <QLabel>
 #include <QListWidgetItem>
+#include <QCheckBox>
+#include <QColorDialog>
+#include <QSpinBox>
 #include <stdexcept>
 
 #include "expressioncalculator.h"
@@ -48,6 +51,14 @@ public slots:
     void onHistoryItemDoubleClicked(QListWidgetItem*);
     void onUpdateTimerTimeout();
     void onHistoryEditTextChanged(const QString&);
+
+    // Слоты для геометрии
+    void onShapeTypeChanged(int index);
+    void onAddShapeClicked();
+    void onColorChanged();
+    void onThicknessChanged(int value);
+    void onPointValueChanged();
+    void onDrawingModeToggled(bool checked);
 protected:
    virtual void keyPressEvent(QKeyEvent *);
 
@@ -69,6 +80,13 @@ private:
      void updateHistoryDisplay();
      void recalculateHistoryItem();
 
+
+     // Методы для геометрии
+     void setupGeometryTab();
+     void updateShapeSettings();
+     void clearPointInputs();
+     QVector<QPointF> getPointsFromInputs() const;
+
     Ui::MainWindow *ui;
 
     struct HistoryItem {
@@ -84,5 +102,14 @@ private:
     // Добавьте константы для истории
     const int MAX_HISTORY_ITEMS = 20;
     const int UPDATE_DELAY_MS = 500; // Задержка перед перерасчетом в мс
+
+    // Виджеты геометрии (можно добавить указатели, если нужно)
+    QSpinBox *thicknessSpinBox;
+    QColorDialog *colorDialog;
+    QPushButton *colorButton;
+    QCheckBox *drawingModeCheckBox;
+    QVector<QDoubleSpinBox*> pointXInputs;
+    QVector<QDoubleSpinBox*> pointYInputs;
+    QGroupBox *pointsGroupBox;
 };
 #endif // MAINWINDOW_H

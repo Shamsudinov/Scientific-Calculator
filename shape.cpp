@@ -27,7 +27,7 @@ bool Shape::isValid() const {
     case TriangleShape:
         return points.size() >= 2;
     case PolygonShape:
-    case FreehandShape:
+    case PolylineShape:
         return points.size() >= 1;
     default:
         return false;
@@ -52,4 +52,17 @@ QRectF Shape::boundingRect() const {
     }
 
     return QRectF(minX, minY, maxX - minX, maxY - minY);
+}
+
+QString Shape::shapeTypeToString(ShapeType type) {
+    switch (type) {
+    case LineShape: return "Линия";
+    case RectangleShape: return "Прямоугольник";
+    case EllipseShape: return "Эллипс";
+    case TriangleShape: return "Треугольник";
+    case PolygonShape: return "Многоугольник";
+    case PolylineShape: return "Ломаная линия";
+    case TextShape: return "Текст";
+    default: return "Неизвестно";
+    }
 }

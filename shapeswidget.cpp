@@ -169,7 +169,7 @@ void ShapesWidget::mousePressEvent(QMouseEvent *event) {
     if (event->button() == Qt::RightButton) {
         isPanning = true;
         lastPanPoint = event->pos();
-    } else if (event->button() == Qt::LeftButton) {
+    } else if (event->button() == Qt::LeftButton && drawingEnabled) {
         isDrawing = true;
         controller->startDrawing(currentShape.getType(), worldPoint);
         update();
@@ -253,5 +253,70 @@ void ShapesWidget::fitToView() {
 
         update();
         emit viewChanged();
+    }
+}
+
+
+// Новые методы
+Shape ShapesWidget::getCurrentShape() const {
+    return currentShape;
+}
+
+void ShapesWidget::updateCurrentShape(const Shape &shape) {
+    currentShape = shape;
+}
+
+void ShapesWidget::setDrawingEnabled(bool enabled) {
+    drawingEnabled = enabled;
+}
+
+bool ShapesWidget::isDrawingEnabled() const {
+    return drawingEnabled;
+}
+
+void ShapesWidget::addShapeWithParameters(ShapeType type,
+                                          const QVector<QPointF> &points,
+                                          const QColor &color,
+                                          int thickness) {
+    if (points.size() < getRequiredPointsCount(type)) {
+        QMessageBox::warning(this, "Ошибка",
+            QString("Для фигуры '%1' требуется минимум %2 точек")
+            .arg(Shape::shapeTypeToString(type))
+            .arg(getRequiredPointsCount(type)));
+        return;
+    }
+
+    Shape shape(type, color, thickness);
+    for (const QPointF &point : points) {
+        shape.addPoint(point);
+    }
+
+    controller->addShape(shape);
+    update();
+    emit shapeAdded();
+}
+
+QVector<QString> ShapesWidget::getAvailableShapes() {
+    return {
+        "Линия",
+        "Прямоугольник",
+        "Эллипс",
+        "Треугольник",
+        "Многоугольник",
+        "Ломаная линия",
+        "Текст"
+    };
+}
+
+int ShapesWidget::getRequiredPointsCount(ShapeType type) {
+    switch (type) {
+    case LineShape: return 2;
+    case RectangleShape: return 2;
+    case EllipseShape: return 2;
+    case TriangleShape: return 3;
+    case PolygonShape: return 3; // Минимум треугольник
+    case PolylineShape: return 2;
+    case TextShape: return 1;
+    default: return 1;
     }
 }
