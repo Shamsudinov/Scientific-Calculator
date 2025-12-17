@@ -19,6 +19,9 @@
     <height>650</height>
    </size>
   </property>
+  <property name="windowTitle">
+   <string>Научный калькулятор</string>
+  </property>
   <property name="styleSheet">
    <string notr="true">QMainWindow {
     background-color: #2b2b2b;
@@ -123,15 +126,12 @@ QTextBrowser {
     min-height: 60px;
 }</string>
   </property>
-  <property name="windowTitle">
-   <string>Научный калькулятор</string>
-  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout_3">
     <item row="0" column="0" colspan="3">
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="tab_basic">
        <attribute name="title">
@@ -147,15 +147,13 @@ QTextBrowser {
            <item row="0" column="0" colspan="5">
             <widget class="QTextBrowser" name="browser"/>
            </item>
-
-           <!-- Первый ряд -->
            <item row="1" column="0">
             <widget class="QPushButton" name="pbtn_clear">
-             <property name="text">
-              <string>C</string>
-             </property>
              <property name="styleSheet">
               <string notr="true">background-color: #d32f2f; color: white;</string>
+             </property>
+             <property name="text">
+              <string>C</string>
              </property>
             </widget>
            </item>
@@ -187,8 +185,6 @@ QTextBrowser {
              </property>
             </widget>
            </item>
-
-           <!-- Второй ряд -->
            <item row="2" column="0">
             <widget class="QPushButton" name="pbtn_7">
              <property name="text">
@@ -224,8 +220,6 @@ QTextBrowser {
              </property>
             </widget>
            </item>
-
-           <!-- Третий ряд -->
            <item row="3" column="0">
             <widget class="QPushButton" name="pbtn_4">
              <property name="text">
@@ -261,8 +255,6 @@ QTextBrowser {
              </property>
             </widget>
            </item>
-
-           <!-- Четвертый ряд -->
            <item row="4" column="0">
             <widget class="QPushButton" name="pbtn_1">
              <property name="text">
@@ -298,8 +290,6 @@ QTextBrowser {
              </property>
             </widget>
            </item>
-
-           <!-- Пятый ряд -->
            <item row="5" column="0">
             <widget class="QPushButton" name="pbtn_0">
              <property name="text">
@@ -323,19 +313,17 @@ QTextBrowser {
            </item>
            <item row="5" column="3" colspan="2">
             <widget class="QPushButton" name="pbtn_equal">
-             <property name="text">
-              <string>=</string>
-             </property>
              <property name="styleSheet">
               <string notr="true">background-color: #1976d2; color: white;</string>
+             </property>
+             <property name="text">
+              <string>=</string>
              </property>
             </widget>
            </item>
           </layout>
          </widget>
         </item>
-
-        <!-- Правая панель с дополнительными функциями -->
         <item row="0" column="1">
          <widget class="QGroupBox" name="groupBox_2">
           <property name="title">
@@ -363,7 +351,6 @@ QTextBrowser {
              </property>
             </widget>
            </item>
-
            <item row="1" column="0">
             <widget class="QPushButton" name="pbtn_sinh">
              <property name="text">
@@ -385,7 +372,6 @@ QTextBrowser {
              </property>
             </widget>
            </item>
-
            <item row="2" column="0">
             <widget class="QPushButton" name="pbtn_ln">
              <property name="text">
@@ -407,8 +393,6 @@ QTextBrowser {
              </property>
             </widget>
            </item>
-
-           <!-- Дополнительные кнопки -->
            <item row="3" column="0">
             <widget class="QPushButton" name="pbtn_lparen">
              <property name="text">
@@ -430,22 +414,19 @@ QTextBrowser {
              </property>
             </widget>
            </item>
-
            <item row="4" column="0" colspan="3">
             <widget class="QPushButton" name="pbtn_backspace">
-             <property name="text">
-              <string>⌫</string>
-             </property>
              <property name="styleSheet">
               <string notr="true">background-color: #ff9800; color: white;</string>
+             </property>
+             <property name="text">
+              <string>⌫</string>
              </property>
             </widget>
            </item>
           </layout>
          </widget>
         </item>
-
-        <!-- История операций -->
         <item row="0" column="2">
          <widget class="QGroupBox" name="groupBox_history">
           <property name="title">
@@ -454,15 +435,6 @@ QTextBrowser {
           <layout class="QVBoxLayout" name="verticalLayout">
            <item>
             <widget class="QListWidget" name="historyList">
-             <property name="alternatingRowColors">
-              <bool>true</bool>
-             </property>
-             <property name="selectionMode">
-              <enum>QAbstractItemView::SingleSelection</enum>
-             </property>
-             <property name="editTriggers">
-              <enum>QAbstractItemView::DoubleClicked</enum>
-             </property>
              <property name="styleSheet">
               <string notr="true">QListWidget {
         background-color: #1e1e1e;
@@ -490,6 +462,15 @@ QTextBrowser {
         border: 1px solid #1976d2;
     }</string>
              </property>
+             <property name="editTriggers">
+              <set>QAbstractItemView::DoubleClicked</set>
+             </property>
+             <property name="alternatingRowColors">
+              <bool>true</bool>
+             </property>
+             <property name="selectionMode">
+              <enum>QAbstractItemView::SingleSelection</enum>
+             </property>
             </widget>
            </item>
            <item>
@@ -516,9 +497,6 @@ QTextBrowser {
            </item>
            <item>
             <widget class="QLabel" name="historyResultLabel">
-             <property name="text">
-              <string>Результат:</string>
-             </property>
              <property name="styleSheet">
               <string notr="true">QLabel {
         color: #ffffff;
@@ -526,13 +504,13 @@ QTextBrowser {
         font-size: 14px;
     }</string>
              </property>
+             <property name="text">
+              <string>Результат:</string>
+             </property>
             </widget>
            </item>
            <item>
             <widget class="QTextBrowser" name="historyResultBrowser">
-             <property name="maximumHeight">
-              <number>60</number>
-             </property>
              <property name="styleSheet">
               <string notr="true">QTextBrowser {
         background-color: #1e1e1e;
@@ -550,9 +528,6 @@ QTextBrowser {
             <layout class="QHBoxLayout" name="horizontalLayout">
              <item>
               <widget class="QPushButton" name="pbtn_clear_history">
-               <property name="text">
-                <string>Очистить</string>
-               </property>
                <property name="toolTip">
                 <string>Очистить историю</string>
                </property>
@@ -568,13 +543,13 @@ QTextBrowser {
         background-color: #f44336;
     }</string>
                </property>
+               <property name="text">
+                <string>Очистить</string>
+               </property>
               </widget>
              </item>
              <item>
               <widget class="QPushButton" name="pbtn_use_history">
-               <property name="text">
-                <string>Использовать</string>
-               </property>
                <property name="toolTip">
                 <string>Загрузить выбранное выражение в калькулятор</string>
                </property>
@@ -590,13 +565,13 @@ QTextBrowser {
         background-color: #2196f3;
     }</string>
                </property>
+               <property name="text">
+                <string>Использовать</string>
+               </property>
               </widget>
              </item>
              <item>
               <widget class="QPushButton" name="pbtn_recalculate">
-               <property name="text">
-                <string>Пересчитать</string>
-               </property>
                <property name="toolTip">
                 <string>Пересчитать выбранное выражение</string>
                </property>
@@ -611,6 +586,9 @@ QTextBrowser {
     QPushButton:hover {
         background-color: #4caf50;
     }</string>
+               </property>
+               <property name="text">
+                <string>Пересчитать</string>
                </property>
               </widget>
              </item>
@@ -635,8 +613,6 @@ QTextBrowser {
            <item row="0" column="0" colspan="3">
             <widget class="QTextBrowser" name="trig_browser"/>
            </item>
-
-           <!-- Основные тригонометрические функции -->
            <item row="1" column="0">
             <widget class="QPushButton" name="pbtn_trig_sin">
              <property name="text">
@@ -658,8 +634,6 @@ QTextBrowser {
              </property>
             </widget>
            </item>
-
-           <!-- Обратные тригонометрические функции -->
            <item row="2" column="0">
             <widget class="QPushButton" name="pbtn_trig_asin">
              <property name="text">
@@ -681,8 +655,6 @@ QTextBrowser {
              </property>
             </widget>
            </item>
-
-           <!-- Гиперболические функции -->
            <item row="3" column="0">
             <widget class="QPushButton" name="pbtn_trig_sinh">
              <property name="text">
@@ -704,8 +676,6 @@ QTextBrowser {
              </property>
             </widget>
            </item>
-
-           <!-- Дополнительные функции -->
            <item row="4" column="0">
             <widget class="QPushButton" name="pbtn_trig_cot">
              <property name="text">
@@ -727,8 +697,6 @@ QTextBrowser {
              </property>
             </widget>
            </item>
-
-           <!-- Константы и преобразования -->
            <item row="5" column="0">
             <widget class="QPushButton" name="pbtn_trig_pi">
              <property name="text">
@@ -750,57 +718,52 @@ QTextBrowser {
              </property>
             </widget>
            </item>
-
-           <!-- Кнопки управления -->
            <item row="6" column="0">
             <widget class="QPushButton" name="pbtn_trig_clear">
-             <property name="text">
-              <string>C</string>
-             </property>
              <property name="styleSheet">
               <string notr="true">background-color: #d32f2f; color: white;</string>
+             </property>
+             <property name="text">
+              <string>C</string>
              </property>
             </widget>
            </item>
            <item row="6" column="1">
             <widget class="QPushButton" name="pbtn_trig_backspace">
-             <property name="text">
-              <string>⌫</string>
-             </property>
              <property name="styleSheet">
               <string notr="true">background-color: #ff9800; color: white;</string>
+             </property>
+             <property name="text">
+              <string>⌫</string>
              </property>
             </widget>
            </item>
            <item row="6" column="2">
             <widget class="QPushButton" name="pbtn_trig_equal">
-             <property name="text">
-              <string>=</string>
-             </property>
              <property name="styleSheet">
               <string notr="true">background-color: #1976d2; color: white;</string>
+             </property>
+             <property name="text">
+              <string>=</string>
              </property>
             </widget>
            </item>
           </layout>
          </widget>
         </item>
-
         <item row="0" column="1">
          <widget class="QGroupBox" name="groupBox_4">
           <property name="title">
            <string>Преобразования и настройки</string>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_2">
-
-           <!-- Выбор режима углов -->
            <item>
             <widget class="QLabel" name="label_angle_mode">
-             <property name="text">
-              <string>Режим углов:</string>
-             </property>
              <property name="styleSheet">
               <string notr="true">color: #ffffff; font-weight: bold;</string>
+             </property>
+             <property name="text">
+              <string>Режим углов:</string>
              </property>
             </widget>
            </item>
@@ -847,15 +810,13 @@ QComboBox QAbstractItemView {
              </item>
             </widget>
            </item>
-
-           <!-- Константы -->
            <item>
             <widget class="QLabel" name="label_constants">
-             <property name="text">
-              <string>Константы:</string>
-             </property>
              <property name="styleSheet">
               <string notr="true">color: #ffffff; font-weight: bold;</string>
+             </property>
+             <property name="text">
+              <string>Константы:</string>
              </property>
             </widget>
            </item>
@@ -905,15 +866,13 @@ QComboBox QAbstractItemView {
              </item>
             </layout>
            </item>
-
-           <!-- Часто используемые углы -->
            <item>
             <widget class="QLabel" name="label_common_angles">
-             <property name="text">
-              <string>Частые углы:</string>
-             </property>
              <property name="styleSheet">
               <string notr="true">color: #ffffff; font-weight: bold;</string>
+             </property>
+             <property name="text">
+              <string>Частые углы:</string>
              </property>
             </widget>
            </item>
@@ -963,23 +922,18 @@ QComboBox QAbstractItemView {
              </item>
             </layout>
            </item>
-
-           <!-- Информационная панель -->
            <item>
             <widget class="QLabel" name="label_info">
-             <property name="text">
-              <string>Информация:</string>
-             </property>
              <property name="styleSheet">
               <string notr="true">color: #ffffff; font-weight: bold;</string>
+             </property>
+             <property name="text">
+              <string>Информация:</string>
              </property>
             </widget>
            </item>
            <item>
             <widget class="QTextBrowser" name="trig_info_browser">
-             <property name="maximumHeight">
-              <number>100</number>
-             </property>
              <property name="styleSheet">
               <string notr="true">QTextBrowser {
     background-color: #1e1e1e;
@@ -995,17 +949,26 @@ QComboBox QAbstractItemView {
               <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Consolas','Monaco',monospace; font-size:12px; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Выберите режим углов:&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;- Радианы (по умолчанию)&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;- Градусы&lt;/p&gt;
-&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;- Грады&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'Consolas','Monaco','monospace'; font-size:12px; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:12px;&quot;&gt;Выберите режим углов:&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:12px;&quot;&gt;- Радианы (по умолчанию)&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:12px;&quot;&gt;- Градусы&lt;/span&gt;&lt;/p&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-size:12px;&quot;&gt;- Грады&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
             </widget>
            </item>
-
           </layout>
          </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_geometry">
+       <attribute name="title">
+        <string>Геометрия</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_9">
+        <item row="0" column="0">
+         <widget class="ShapesWidget" name="widget" native="true"/>
         </item>
        </layout>
       </widget>
@@ -1013,14 +976,20 @@ p, li { white-space: pre-wrap; }
     </item>
    </layout>
   </widget>
-
-  <!-- Строка состояния -->
   <widget class="QStatusBar" name="statusbar">
    <property name="styleSheet">
     <string notr="true">background-color: #3c3c3c; color: #ffffff;</string>
    </property>
   </widget>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ShapesWidget</class>
+   <extends>QWidget</extends>
+   <header location="global">shapeswidget.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

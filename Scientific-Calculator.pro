@@ -18,11 +18,13 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     expressioncalculator.cpp \
     main.cpp \
-    mainwindow.cpp
+    mainwindow.cpp \
+    shapeswidget.cpp
 
 HEADERS += \
     expressioncalculator.h \
-    mainwindow.h
+    mainwindow.h \
+    shapeswidget.h
 
 FORMS += \
     mainwindow.ui

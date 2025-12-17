@@ -14,6 +14,7 @@
 #include <stdexcept>
 
 #include "expressioncalculator.h"
+#include "shapeswidget.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
