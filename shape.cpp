@@ -5,6 +5,14 @@ Shape::Shape(ShapeType type, const QColor &color, int thickness)
     : type(type), color(color), thickness(thickness) {
 }
 
+ShapeType Shape::getType() const { return type; }
+
+QVector<QPointF> Shape::getPoints() const { return points; }
+
+QColor Shape::getColor() const { return color; }
+
+int Shape::getThickness() const { return thickness; }
+
 void Shape::addPoint(const QPointF &point) {
     points.append(point);
 }
@@ -33,6 +41,12 @@ bool Shape::isValid() const {
         return false;
     }
 }
+
+int Shape::pointCount() const { return points.size(); }
+
+QPointF Shape::firstPoint() const { return points.isEmpty() ? QPointF() : points.first(); }
+
+QPointF Shape::lastPoint() const { return points.isEmpty() ? QPointF() : points.last(); }
 
 QRectF Shape::boundingRect() const {
     if (points.isEmpty()) {

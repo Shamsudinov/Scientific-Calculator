@@ -19,22 +19,20 @@ enum ShapeType {
 
 class Shape {
 public:
-    Shape(ShapeType type = NoShape,
-          const QColor &color = Qt::black,
-          int thickness = 2);
+    Shape(ShapeType type = NoShape,const QColor &color = Qt::black,int thickness = 2);
 
-    ShapeType getType() const { return type; }
-    QVector<QPointF> getPoints() const { return points; }
-    QColor getColor() const { return color; }
-    int getThickness() const { return thickness; }
+    ShapeType getType() const;
+    QVector<QPointF> getPoints() const;
+    QColor getColor() const;
+    int getThickness() const;
 
     void addPoint(const QPointF &point);
     void setLastPoint(const QPointF &point);
     void clearPoints();
     bool isValid() const;
-    int pointCount() const { return points.size(); }
-    QPointF firstPoint() const { return points.isEmpty() ? QPointF() : points.first(); }
-    QPointF lastPoint() const { return points.isEmpty() ? QPointF() : points.last(); }
+    int pointCount() const;
+    QPointF firstPoint() const;
+    QPointF lastPoint() const;
 
     QRectF boundingRect() const;
 
