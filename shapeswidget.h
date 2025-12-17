@@ -2,33 +2,12 @@
 #define SHAPESWIDGET_H
 
 #include <QWidget>
-#include <QPainter>
-#include <QMouseEvent>
 #include <QVector>
-#include <QPointF>
-#include <QColor>
+#include "shape.h"
+#include "viewtransformer.h"
 
-enum ShapeType {
-    NoShape,
-    LineShape,
-    RectangleShape,
-    EllipseShape,
-    TriangleShape,
-    PolygonShape,
-    FreehandShape
-};
-
-struct Shape {
-    ShapeType type;
-    QVector<QPointF> points;
-    QColor color;
-    int thickness;
-
-    Shape(ShapeType t = NoShape,
-          const QColor &c = Qt::black,
-          int th = 2)
-        : type(t), color(c), thickness(th) {}
-};
+class ShapeRenderer;
+class DrawingController;
 
 class ShapesWidget : public QWidget
 {
@@ -36,24 +15,33 @@ class ShapesWidget : public QWidget
 
 public:
     explicit ShapesWidget(QWidget *parent = nullptr);
+    ~ShapesWidget();
 
-    // Методы для управления фигурами
+    // Управление рисованием
     void setCurrentShape(ShapeType shape);
     void setCurrentColor(const QColor &color);
     void setCurrentThickness(int thickness);
+
+    // Управление фигурами
     void clearAllShapes();
     void undoLastShape();
+    QVector<Shape> getShapes() const;
+    void setShapes(const QVector<Shape> &newShapes);
 
-    // Сохранение и загрузка
+    // Файловые операции
     bool saveToFile(const QString &fileName);
     bool loadFromFile(const QString &fileName);
 
-    QVector<Shape> getShapes() const { return shapes; }
-    void setShapes(const QVector<Shape> &newShapes);
+    // Управление видом
+    void resetView();
+    void zoomIn();
+    void zoomOut();
+    void fitToView();
 
 signals:
     void shapeAdded();
     void shapesCleared();
+    void viewChanged();
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -63,27 +51,15 @@ protected:
     void wheelEvent(QWheelEvent *event) override;
 
 private:
-    void drawShape(QPainter &painter, const Shape &shape);
-    void drawLine(QPainter &painter, const Shape &shape);
-    void drawRectangle(QPainter &painter, const Shape &shape);
-    void drawEllipse(QPainter &painter, const Shape &shape);
-    void drawTriangle(QPainter &painter, const Shape &shape);
-    void drawPolygon(QPainter &painter, const Shape &shape);
-    void drawFreehand(QPainter &painter, const Shape &shape);
+    void setupUI();
+    void drawShapes(QPainter &painter);
+    void drawCurrentShape(QPainter &painter);
+    void drawDebugInfo(QPainter &painter);
 
-    QPointF applyTransform(const QPointF &point);
-    void updateScale(qreal delta, const QPointF &mousePos);
-
-private:
-    QVector<Shape> shapes;
+    class DrawingController *controller;
+    ViewTransformer transformer;
     Shape currentShape;
     bool isDrawing;
-
-    // Трансформация для масштабирования и перемещения
-    qreal scaleFactor;
-    QPointF offset;
-
-    // Для перемещения холста
     bool isPanning;
     QPoint lastPanPoint;
 };

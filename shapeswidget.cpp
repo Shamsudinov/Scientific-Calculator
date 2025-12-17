@@ -1,66 +1,71 @@
 #include "ShapesWidget.h"
+#include "shaperenderer.h"
+#include "drawingcontroller.h"
+#include <QPainter>
+#include <QWheelEvent>
 #include <QFile>
 #include <QDataStream>
-#include <QDebug>
-#include <QMessageBox>
-#include <QWheelEvent>
 
 ShapesWidget::ShapesWidget(QWidget *parent)
     : QWidget(parent)
+    , controller(new DrawingController())
     , isDrawing(false)
-    , scaleFactor(1.0)
-    , offset(0, 0)
     , isPanning(false)
 {
+    setupUI();
+}
+
+ShapesWidget::~ShapesWidget() {
+    delete controller;
+}
+
+void ShapesWidget::setupUI() {
     setCurrentShape(LineShape);
     setCurrentColor(Qt::black);
     setCurrentThickness(2);
 
-    // Включаем отслеживание мыши для движения без нажатия
     setMouseTracking(true);
-
-    // Устанавливаем минимальный размер
     setMinimumSize(400, 300);
 
-    // Белый фон
     setAutoFillBackground(true);
     QPalette palette = this->palette();
     palette.setColor(QPalette::Window, Qt::white);
     setPalette(palette);
 }
 
-void ShapesWidget::setCurrentShape(ShapeType shape)
-{
-    currentShape.type = shape;
+void ShapesWidget::setCurrentShape(ShapeType shape) {
+    currentShape = Shape(shape);
 }
 
-void ShapesWidget::setCurrentColor(const QColor &color)
-{
-    currentShape.color = color;
+void ShapesWidget::setCurrentColor(const QColor &color) {
+    currentShape = Shape(currentShape.getType(), color, currentShape.getThickness());
 }
 
-void ShapesWidget::setCurrentThickness(int thickness)
-{
-    currentShape.thickness = thickness;
+void ShapesWidget::setCurrentThickness(int thickness) {
+    currentShape = Shape(currentShape.getType(), currentShape.getColor(), thickness);
 }
 
-void ShapesWidget::clearAllShapes()
-{
-    shapes.clear();
+void ShapesWidget::clearAllShapes() {
+    controller->clearAllShapes();
     update();
     emit shapesCleared();
 }
 
-void ShapesWidget::undoLastShape()
-{
-    if (!shapes.isEmpty()) {
-        shapes.removeLast();
-        update();
-    }
+void ShapesWidget::undoLastShape() {
+    controller->removeLastShape();
+    update();
 }
 
-bool ShapesWidget::saveToFile(const QString &fileName)
-{
+QVector<Shape> ShapesWidget::getShapes() const {
+    return controller->getShapes();
+}
+
+void ShapesWidget::setShapes(const QVector<Shape> &newShapes) {
+    controller->setShapes(newShapes);
+    update();
+}
+
+bool ShapesWidget::saveToFile(const QString &fileName) {
     QFile file(fileName);
     if (!file.open(QIODevice::WriteOnly)) {
         return false;
@@ -69,17 +74,17 @@ bool ShapesWidget::saveToFile(const QString &fileName)
     QDataStream out(&file);
     out.setVersion(QDataStream::Qt_5_15);
 
-    // Сохраняем количество фигур
+    auto shapes = controller->getShapes();
     out << quint32(shapes.size());
 
-    // Сохраняем каждую фигуру
     for (const Shape &shape : shapes) {
-        out << quint32(shape.type);
-        out << shape.color;
-        out << shape.thickness;
-        out << quint32(shape.points.size());
+        out << quint32(shape.getType());
+        out << shape.getColor();
+        out << shape.getThickness();
 
-        for (const QPointF &point : shape.points) {
+        auto points = shape.getPoints();
+        out << quint32(points.size());
+        for (const QPointF &point : points) {
             out << point;
         }
     }
@@ -88,8 +93,7 @@ bool ShapesWidget::saveToFile(const QString &fileName)
     return true;
 }
 
-bool ShapesWidget::loadFromFile(const QString &fileName)
-{
+bool ShapesWidget::loadFromFile(const QString &fileName) {
     QFile file(fileName);
     if (!file.open(QIODevice::ReadOnly)) {
         return false;
@@ -98,257 +102,156 @@ bool ShapesWidget::loadFromFile(const QString &fileName)
     QDataStream in(&file);
     in.setVersion(QDataStream::Qt_5_15);
 
-    shapes.clear();
-
+    QVector<Shape> loadedShapes;
     quint32 shapeCount;
     in >> shapeCount;
 
     for (quint32 i = 0; i < shapeCount; ++i) {
-        Shape shape;
         quint32 type;
+        QColor color;
+        int thickness;
         quint32 pointCount;
 
-        in >> type;
-        in >> shape.color;
-        in >> shape.thickness;
-        in >> pointCount;
-
-        shape.type = static_cast<ShapeType>(type);
+        in >> type >> color >> thickness >> pointCount;
+        Shape shape(static_cast<ShapeType>(type), color, thickness);
 
         for (quint32 j = 0; j < pointCount; ++j) {
             QPointF point;
             in >> point;
-            shape.points.append(point);
+            shape.addPoint(point);
         }
 
-        shapes.append(shape);
+        loadedShapes.append(shape);
     }
 
     file.close();
+    controller->setShapes(loadedShapes);
     update();
     return true;
 }
 
-void ShapesWidget::setShapes(const QVector<Shape> &newShapes)
-{
-    shapes = newShapes;
-    update();
-}
-
-void ShapesWidget::paintEvent(QPaintEvent *event)
-{
+void ShapesWidget::paintEvent(QPaintEvent *event) {
     Q_UNUSED(event);
 
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    // Сохраняем текущее состояние
     painter.save();
+    painter.translate(transformer.getOffset());
+    painter.scale(transformer.getScale(), transformer.getScale());
 
-    // Применяем трансформации
-    painter.translate(offset);
-    painter.scale(scaleFactor, scaleFactor);
+    drawShapes(painter);
 
-    // Отрисовываем все фигуры
-    for (const Shape &shape : shapes) {
-        drawShape(painter, shape);
-    }
-
-    // Отрисовываем текущую фигуру (если рисуем)
-    if (isDrawing && !currentShape.points.isEmpty()) {
-        drawShape(painter, currentShape);
-    }
-
-    // Восстанавливаем состояние
     painter.restore();
+    drawDebugInfo(painter);
+}
 
-    // Отладочная информация (можно убрать)
+void ShapesWidget::drawShapes(QPainter &painter) {
+    auto shapes = controller->getShapes();
+    for (const Shape &shape : shapes) {
+        ShapeRenderer::render(painter, shape);
+    }
+
+    if (controller->isDrawing()) {
+        ShapeRenderer::render(painter, controller->getCurrentShape());
+    }
+}
+
+void ShapesWidget::drawDebugInfo(QPainter &painter) {
     painter.setPen(Qt::blue);
-    painter.drawText(10, 20, QString("Масштаб: %1").arg(scaleFactor, 0, 'f', 2));
-    painter.drawText(10, 40, QString("Фигур: %1").arg(shapes.size()));
+    painter.drawText(10, 20, QString("Масштаб: %1").arg(transformer.getScale(), 0, 'f', 2));
+    painter.drawText(10, 40, QString("Фигур: %1").arg(controller->shapeCount()));
 }
 
-void ShapesWidget::drawShape(QPainter &painter, const Shape &shape)
-{
-    painter.setPen(QPen(shape.color, shape.thickness, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
-    painter.setBrush(Qt::NoBrush);
-
-    switch (shape.type) {
-    case LineShape:
-        drawLine(painter, shape);
-        break;
-    case RectangleShape:
-        drawRectangle(painter, shape);
-        break;
-    case EllipseShape:
-        drawEllipse(painter, shape);
-        break;
-    case TriangleShape:
-        drawTriangle(painter, shape);
-        break;
-    case PolygonShape:
-        drawPolygon(painter, shape);
-        break;
-    case FreehandShape:
-        drawFreehand(painter, shape);
-        break;
-    default:
-        break;
-    }
-}
-
-void ShapesWidget::drawLine(QPainter &painter, const Shape &shape)
-{
-    if (shape.points.size() >= 2) {
-        painter.drawLine(shape.points.first(), shape.points.last());
-    }
-}
-
-void ShapesWidget::drawRectangle(QPainter &painter, const Shape &shape)
-{
-    if (shape.points.size() >= 2) {
-        QRectF rect(shape.points.first(), shape.points.last());
-        painter.drawRect(rect);
-    }
-}
-
-void ShapesWidget::drawEllipse(QPainter &painter, const Shape &shape)
-{
-    if (shape.points.size() >= 2) {
-        QRectF rect(shape.points.first(), shape.points.last());
-        painter.drawEllipse(rect);
-    }
-}
-
-void ShapesWidget::drawTriangle(QPainter &painter, const Shape &shape)
-{
-    if (shape.points.size() >= 2) {
-        QPointF p1 = shape.points.first();
-        QPointF p2 = shape.points.last();
-
-        QPointF p3(p1.x() + (p2.x() - p1.x()) / 2, p1.y());
-        QPolygonF triangle;
-        triangle << p1 << p2 << p3 << p1;
-
-        painter.drawPolygon(triangle);
-    }
-}
-
-void ShapesWidget::drawPolygon(QPainter &painter, const Shape &shape)
-{
-    if (shape.points.size() > 1) {
-        painter.drawPolyline(shape.points.data(), shape.points.size());
-        if (shape.points.size() > 2) {
-            painter.drawLine(shape.points.last(), shape.points.first());
-        }
-    }
-}
-
-void ShapesWidget::drawFreehand(QPainter &painter, const Shape &shape)
-{
-    if (shape.points.size() > 1) {
-        for (int i = 1; i < shape.points.size(); ++i) {
-            painter.drawLine(shape.points[i-1], shape.points[i]);
-        }
-    }
-}
-
-QPointF ShapesWidget::applyTransform(const QPointF &point)
-{
-    return (point - offset) / scaleFactor;
-}
-
-void ShapesWidget::mousePressEvent(QMouseEvent *event)
-{
-    QPointF transformedPoint = applyTransform(event->pos());
+void ShapesWidget::mousePressEvent(QMouseEvent *event) {
+    QPointF worldPoint = transformer.screenToWorld(event->pos());
 
     if (event->button() == Qt::RightButton) {
-        // Правая кнопка - перемещение холста
         isPanning = true;
         lastPanPoint = event->pos();
     } else if (event->button() == Qt::LeftButton) {
-        // Левая кнопка - рисование
         isDrawing = true;
-        currentShape.points.clear();
-        currentShape.points.append(transformedPoint);
-
-        // Для некоторых фигур добавляем первую точку дважды
-        if (currentShape.type == LineShape ||
-            currentShape.type == RectangleShape ||
-            currentShape.type == EllipseShape ||
-            currentShape.type == TriangleShape) {
-            currentShape.points.append(transformedPoint);
-        }
+        controller->startDrawing(currentShape.getType(), worldPoint);
+        update();
     }
-
-    update();
 }
 
-void ShapesWidget::mouseMoveEvent(QMouseEvent *event)
-{
-    QPointF transformedPoint = applyTransform(event->pos());
+void ShapesWidget::mouseMoveEvent(QMouseEvent *event) {
+    QPointF worldPoint = transformer.screenToWorld(event->pos());
 
     if (isPanning) {
-        // Перемещение холста
         QPoint delta = event->pos() - lastPanPoint;
-        offset += delta;
+        transformer.pan(delta);
         lastPanPoint = event->pos();
         update();
-    } else if (isDrawing && !currentShape.points.isEmpty()) {
-        // Обновление текущей фигуры
-        if (currentShape.type == FreehandShape ||
-            currentShape.type == PolygonShape) {
-            currentShape.points.append(transformedPoint);
-        } else {
-            // Для фигур с двумя точками обновляем последнюю
-            currentShape.points.last() = transformedPoint;
-        }
+    } else if (isDrawing) {
+        controller->updateDrawing(worldPoint);
         update();
     }
 }
 
-void ShapesWidget::mouseReleaseEvent(QMouseEvent *event)
-{
+void ShapesWidget::mouseReleaseEvent(QMouseEvent *event) {
     if (event->button() == Qt::RightButton) {
         isPanning = false;
     } else if (event->button() == Qt::LeftButton && isDrawing) {
         isDrawing = false;
-
-        // Добавляем фигуру в список, если она валидна
-        if (!currentShape.points.isEmpty() && currentShape.type != NoShape) {
-            shapes.append(currentShape);
-            emit shapeAdded();
-        }
-
-        // Очищаем текущую фигуру
-        currentShape.points.clear();
+        controller->finishDrawing();
+        emit shapeAdded();
         update();
     }
 }
 
-void ShapesWidget::wheelEvent(QWheelEvent *event)
-{
-    // Масштабирование колесиком мыши
+void ShapesWidget::wheelEvent(QWheelEvent *event) {
     qreal zoomFactor = 1.1;
     if (event->angleDelta().y() < 0) {
         zoomFactor = 1.0 / zoomFactor;
     }
 
-    QPointF mousePos = event->position();
-    updateScale(zoomFactor, mousePos);
+    transformer.zoom(zoomFactor, event->position());
     update();
 }
 
-void ShapesWidget::updateScale(qreal delta, const QPointF &mousePos)
-{
-    qreal oldScale = scaleFactor;
-    scaleFactor *= delta;
+void ShapesWidget::resetView() {
+    transformer.setScale(1.0);
+    transformer.setOffset(QPointF(0, 0));
+    update();
+    emit viewChanged();
+}
 
-    // Ограничиваем масштаб
-    if (scaleFactor < 0.1) scaleFactor = 0.1;
-    if (scaleFactor > 10.0) scaleFactor = 10.0;
+void ShapesWidget::zoomIn() {
+    transformer.zoom(1.1, rect().center());
+    update();
+    emit viewChanged();
+}
 
-    // Корректируем offset для масштабирования относительно курсора
-    QPointF mouseBefore = (mousePos - offset) / oldScale;
-    offset = mousePos - mouseBefore * scaleFactor;
+void ShapesWidget::zoomOut() {
+    transformer.zoom(1.0/1.1, rect().center());
+    update();
+    emit viewChanged();
+}
+
+void ShapesWidget::fitToView() {
+    auto shapes = controller->getShapes();
+    if (shapes.isEmpty()) return;
+
+    QRectF boundingRect;
+    for (const Shape &shape : shapes) {
+        boundingRect = boundingRect.united(shape.boundingRect());
+    }
+
+    if (!boundingRect.isEmpty()) {
+        // Расчет масштаба и смещения для отображения всех фигур
+        qreal scaleX = width() / boundingRect.width();
+        qreal scaleY = height() / boundingRect.height();
+        qreal scale = qMin(scaleX, scaleY) * 0.9; // 10% отступ
+
+        transformer.setScale(scale);
+        transformer.setOffset(QPointF(
+            (width() - boundingRect.width() * scale) / 2 - boundingRect.left() * scale,
+            (height() - boundingRect.height() * scale) / 2 - boundingRect.top() * scale
+        ));
+
+        update();
+        emit viewChanged();
+    }
 }

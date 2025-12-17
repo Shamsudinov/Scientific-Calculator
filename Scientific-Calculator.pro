@@ -16,15 +16,23 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    drawingcontroller.cpp \
     expressioncalculator.cpp \
     main.cpp \
     mainwindow.cpp \
-    shapeswidget.cpp
+    shape.cpp \
+    shaperenderer.cpp \
+    shapeswidget.cpp \
+    viewtransformer.cpp
 
 HEADERS += \
+    drawingcontroller.h \
     expressioncalculator.h \
     mainwindow.h \
-    shapeswidget.h
+    shape.h \
+    shaperenderer.h \
+    shapeswidget.h \
+    viewtransformer.h
 
 FORMS += \
     mainwindow.ui
