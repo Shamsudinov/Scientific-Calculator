@@ -13,14 +13,18 @@ ShapesWidget::ShapesWidget(QWidget *parent)
     , controller(new DrawingController())
     , isDrawing(false)
     , isPanning(false)
-    , gridEnabled(true)  // сетка включена по умолчанию
-    , gridStep(1.0)      // 1 см по умолчанию
+    , gridEnabled(true)      // сетка включена по умолчанию
+    , autoAdjustGrid(true)   // автоматическая подстройка сетки
+    , gridStep(1.0)         // 1 см по умолчанию
+    , gridDensity(1.0)      // нормальная плотность
     , gridColor(QColor(200, 200, 200, 150))  // светло-серый с прозрачностью
     , axesColor(Qt::black)
-    , worldSize(50.0)    // 50 см по умолчанию
+    , worldSize(50.0)       // 50 см по умолчанию
+    , effectiveGridStep(1.0)
 {
     setupUI();
     updateViewForWorldSize();
+    updateGridParameters();
 }
 
 ShapesWidget::~ShapesWidget() {
@@ -45,14 +49,10 @@ void ShapesWidget::setupUI() {
 }
 
 void ShapesWidget::updateViewForWorldSize() {
-    // При масштабе 1.0 виджет должен показывать worldSize сантиметров
-    // Настраиваем трансформер соответствующим образом
     transformer.setScale(1.0);
-
-    // Центрируем начало координат
     QPointF offset(width() / 2.0, height() / 2.0);
     transformer.setOffset(offset);
-
+    updateGridParameters();
     update();
 }
 
@@ -62,30 +62,26 @@ void ShapesWidget::resizeEvent(QResizeEvent *event) {
 }
 
 QPointF ShapesWidget::screenToWorldWithOffset(const QPoint &screenPoint) const {
-    // Преобразуем экранные координаты в мировые с учетом размера области
     QPointF centeredScreen(screenPoint.x() - width() / 2.0,
                           screenPoint.y() - height() / 2.0);
 
-    // Масштабируем: worldSize см соответствуют меньшей стороне виджета
     qreal widgetSize = qMin(width(), height());
     qreal pixelsPerCm = widgetSize / worldSize;
 
     return QPointF(centeredScreen.x() / pixelsPerCm,
-                   -centeredScreen.y() / pixelsPerCm);  // Инвертируем Y
+                   -centeredScreen.y() / pixelsPerCm);
 }
 
 QPointF ShapesWidget::worldToScreenWithOffset(const QPointF &worldPoint) const {
-    // Преобразуем мировые координаты в экранные
     qreal widgetSize = qMin(width(), height());
     qreal pixelsPerCm = widgetSize / worldSize;
 
     QPointF screenPoint(worldPoint.x() * pixelsPerCm,
-                       -worldPoint.y() * pixelsPerCm);  // Инвертируем Y
+                       -worldPoint.y() * pixelsPerCm);
 
     return QPointF(screenPoint.x() + width() / 2.0,
                    screenPoint.y() + height() / 2.0);
 }
-
 void ShapesWidget::setCurrentShape(ShapeType shape) {
     currentShape = Shape(shape);
 }
@@ -189,21 +185,38 @@ void ShapesWidget::paintEvent(QPaintEvent *event) {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    // Рисуем координатную сетку (в координатах экрана)
+    // Рисуем координатную сетку (в мировых координатах)
     if (gridEnabled) {
+        painter.save();
+
+        // Применяем те же преобразования, что и для фигур
+        qreal widgetSize = qMin(width(), height());
+        qreal pixelsPerCm = widgetSize / worldSize;
+
+        painter.translate(width() / 2.0, height() / 2.0);
+        painter.scale(pixelsPerCm, -pixelsPerCm);
+
         drawCoordinateGrid(painter);
+        painter.restore();
     }
 
-    // Рисуем фигуры с использованием текущего трансформера
+    // Рисуем фигуры
     painter.save();
     qreal widgetSize = qMin(width(), height());
     qreal pixelsPerCm = widgetSize / worldSize;
 
     painter.translate(width() / 2.0, height() / 2.0);
-    painter.scale(pixelsPerCm, -pixelsPerCm);  // Инвертируем ось Y
+    painter.scale(pixelsPerCm, -pixelsPerCm);
 
     drawShapes(painter);
     painter.restore();
+
+    // Рисуем подписи координат (в экранных координатах)
+    if (gridEnabled) {
+        painter.save();
+        drawGridLabels(painter);
+        painter.restore();
+    }
 
     drawDebugInfo(painter);
 }
@@ -219,119 +232,189 @@ void ShapesWidget::drawCoordinateGrid(QPainter &painter) {
 void ShapesWidget::drawAxes(QPainter &painter) {
     painter.save();
 
-    QPen axesPen(axesColor, 2);
+    QPen axesPen(axesColor, 0.1); // Толщина в мировых координатах
     painter.setPen(axesPen);
 
-    // Начало координат в центре виджета
-    int centerX = width() / 2;
-    int centerY = height() / 2;
+    // Рассчитываем границы видимой области в мировых координатах
+    qreal halfWorldSize = worldSize / 2.0;
+    qreal visibleLeft = -halfWorldSize;
+    qreal visibleRight = halfWorldSize;
+    qreal visibleTop = halfWorldSize;
+    qreal visibleBottom = -halfWorldSize;
 
-    // Ось X (горизонтальная)
-    painter.drawLine(0, centerY, width(), centerY);
+    // Ось X
+    painter.drawLine(QPointF(visibleLeft, 0), QPointF(visibleRight, 0));
 
-    // Ось Y (вертикальная)
-    painter.drawLine(centerX, 0, centerX, height());
+    // Ось Y
+    painter.drawLine(QPointF(0, visibleTop), QPointF(0, visibleBottom));
 
     // Стрелки на осях
-    int arrowSize = 10;
+    qreal arrowSize = 0.5; // Размер стрелок в см
 
     // Стрелка оси X
-    painter.drawLine(width() - arrowSize, centerY - arrowSize/2,
-                     width(), centerY);
-    painter.drawLine(width() - arrowSize, centerY + arrowSize/2,
-                     width(), centerY);
+    painter.drawLine(QPointF(visibleRight - arrowSize, arrowSize/2),
+                     QPointF(visibleRight, 0));
+    painter.drawLine(QPointF(visibleRight - arrowSize, -arrowSize/2),
+                     QPointF(visibleRight, 0));
 
     // Стрелка оси Y
-    painter.drawLine(centerX - arrowSize/2, arrowSize,
-                     centerX, 0);
-    painter.drawLine(centerX + arrowSize/2, arrowSize,
-                     centerX, 0);
-
-    // Подписи осей
-    painter.setFont(coordinateFont);
-    painter.drawText(width() - 20, centerY - 10, "X");
-    painter.drawText(centerX + 10, 20, "Y");
-
-    // Ноль в начале координат
-    painter.drawText(centerX + 5, centerY - 5, "0");
+    painter.drawLine(QPointF(-arrowSize/2, visibleTop - arrowSize),
+                     QPointF(0, visibleTop));
+    painter.drawLine(QPointF(arrowSize/2, visibleTop - arrowSize),
+                     QPointF(0, visibleTop));
 
     painter.restore();
 }
 
 void ShapesWidget::drawGridLines(QPainter &painter) {
+    if (effectiveGridStep <= 0) return;
+
     painter.save();
 
-    QPen gridPen(gridColor, 1, Qt::DotLine);
+    QPen gridPen(gridColor, 0.02, Qt::SolidLine); // Тонкие линии
     painter.setPen(gridPen);
 
-    qreal widgetSize = qMin(width(), height());
-    qreal pixelsPerCm = widgetSize / worldSize;
+    // Рассчитываем границы видимой области в мировых координатах
+    qreal halfWorldSize = worldSize / 2.0;
+    qreal visibleLeft = -halfWorldSize;
+    qreal visibleRight = halfWorldSize;
+    qreal visibleTop = halfWorldSize;
+    qreal visibleBottom = -halfWorldSize;
 
-    // Шаг сетки в пикселях
-    qreal gridStepPixels = gridStep * pixelsPerCm;
+    // Вертикальные линии
+    QVector<qreal> xPositions = getGridLinePositions(visibleLeft, visibleRight, effectiveGridStep);
+    for (qreal x : xPositions) {
+        // Пропускаем ось Y (x=0)
+        if (qAbs(x) < 0.001 * effectiveGridStep) continue;
 
-    if (gridStepPixels < 5) {
-        // Слишком мелкая сетка, не рисуем
-        painter.restore();
-        return;
+        painter.drawLine(QPointF(x, visibleTop), QPointF(x, visibleBottom));
     }
 
-    int centerX = width() / 2;
-    int centerY = height() / 2;
+    // Горизонтальные линии
+    QVector<qreal> yPositions = getGridLinePositions(visibleBottom, visibleTop, effectiveGridStep);
+    for (qreal y : yPositions) {
+        // Пропускаем ось X (y=0)
+        if (qAbs(y) < 0.001 * effectiveGridStep) continue;
 
-    // Рисуем вертикальные линии (слева и справа от оси Y)
-    for (int i = 1; centerX + i * gridStepPixels < width(); i++) {
-        qreal x = centerX + i * gridStepPixels;
-        painter.drawLine(x, 0, x, height());
-
-        // Подпись для положительных X
-        if (gridStepPixels > 20) {
-            painter.setPen(axesColor);
-            painter.drawText(x - 10, centerY + 15, QString::number(i));
-            painter.setPen(gridPen);
-        }
-    }
-
-    for (int i = 1; centerX - i * gridStepPixels >= 0; i++) {
-        qreal x = centerX - i * gridStepPixels;
-        painter.drawLine(x, 0, x, height());
-
-        // Подпись для отрицательных X
-        if (gridStepPixels > 20) {
-            painter.setPen(axesColor);
-            painter.drawText(x - 10, centerY + 15, QString::number(-i));
-            painter.setPen(gridPen);
-        }
-    }
-
-    // Рисуем горизонтальные линии (выше и ниже оси X)
-    for (int i = 1; centerY + i * gridStepPixels < height(); i++) {
-        qreal y = centerY + i * gridStepPixels;
-        painter.drawLine(0, y, width(), y);
-
-        // Подпись для отрицательных Y (в декартовой системе)
-        if (gridStepPixels > 20) {
-            painter.setPen(axesColor);
-            painter.drawText(centerX + 5, y + 5, QString::number(-i));
-            painter.setPen(gridPen);
-        }
-    }
-
-    for (int i = 1; centerY - i * gridStepPixels >= 0; i++) {
-        qreal y = centerY - i * gridStepPixels;
-        painter.drawLine(0, y, width(), y);
-
-        // Подпись для положительных Y (в декартовой системе)
-        if (gridStepPixels > 20) {
-            painter.setPen(axesColor);
-            painter.drawText(centerX + 5, y + 5, QString::number(i));
-            painter.setPen(gridPen);
-        }
+        painter.drawLine(QPointF(visibleLeft, y), QPointF(visibleRight, y));
     }
 
     painter.restore();
 }
+qreal ShapesWidget::calculateOptimalGridStep() const {
+    // Рассчитываем оптимальный шаг сетки в мировых координатах
+    // в зависимости от текущего масштаба
 
+    // Размер виджета в пикселях
+    qreal widgetSize = qMin(width(), height());
+
+    // Масштаб: сколько сантиметров видно на виджете
+    qreal visibleCm = worldSize;
+
+    // Желаемый минимальный размер клетки в пикселях
+    const qreal minCellPixels = 40.0;
+
+    // Вычисляем оптимальный шаг сетки в сантиметрах
+    qreal optimalStep = (minCellPixels * visibleCm) / widgetSize;
+
+    // Округляем до красивых значений: 0.1, 0.2, 0.5, 1, 2, 5, 10 и т.д.
+    qreal magnitude = qPow(10, qFloor(qLn(optimalStep) / qLn(10)));
+    qreal normalized = optimalStep / magnitude;
+
+    if (normalized < 0.15) {
+        return 0.1 * magnitude;
+    } else if (normalized < 0.35) {
+        return 0.2 * magnitude;
+    } else if (normalized < 0.75) {
+        return 0.5 * magnitude;
+    } else if (normalized < 1.5) {
+        return 1.0 * magnitude;
+    } else if (normalized < 3.5) {
+        return 2.0 * magnitude;
+    } else {
+        return 5.0 * magnitude;
+    }
+}
+QVector<qreal> ShapesWidget::getGridLinePositions(qreal min, qreal max, qreal step) const {
+    QVector<qreal> positions;
+
+    // Находим первую линию
+    qreal first = qCeil(min / step) * step;
+
+    // Добавляем все линии в диапазоне
+    for (qreal pos = first; pos <= max; pos += step) {
+        positions.append(pos);
+    }
+
+    return positions;
+}
+
+void ShapesWidget::drawGridLabels(QPainter &painter) {
+    painter.save();
+
+    QPen textPen(axesColor);
+    painter.setPen(textPen);
+    painter.setFont(coordinateFont);
+
+    // Рассчитываем видимую область
+    qreal halfWorldSize = worldSize / 2.0;
+    qreal visibleLeft = -halfWorldSize;
+    qreal visibleRight = halfWorldSize;
+    qreal visibleTop = halfWorldSize;
+    qreal visibleBottom = -halfWorldSize;
+
+    // Получаем позиции линий сетки
+    QVector<qreal> xPositions = getGridLinePositions(visibleLeft, visibleRight, effectiveGridStep);
+    QVector<qreal> yPositions = getGridLinePositions(visibleBottom, visibleTop, effectiveGridStep);
+
+    // Подписи для вертикальных линий (ось X)
+    for (qreal x : xPositions) {
+        // Пропускаем 0 - он рисуется отдельно
+        if (qAbs(x) < 0.001 * effectiveGridStep) continue;
+
+        QPointF screenPos = worldToScreenWithOffset(QPointF(x, 0));
+
+        // Определяем, где рисовать текст (сверху или снизу от оси X)
+        QString text = QString::number(x, 'f', effectiveGridStep < 0.1 ? 2 :
+                                                   effectiveGridStep < 1 ? 1 : 0);
+        QRect textRect = painter.fontMetrics().boundingRect(text);
+
+        // Рисуем под осью X
+        painter.drawText(screenPos.x() - textRect.width()/2,
+                        screenPos.y() + textRect.height() + 5,
+                        text);
+    }
+
+    // Подписи для горизонтальных линий (ось Y)
+    for (qreal y : yPositions) {
+        // Пропускаем 0 - он рисуется отдельно
+        if (qAbs(y) < 0.001 * effectiveGridStep) continue;
+
+        QPointF screenPos = worldToScreenWithOffset(QPointF(0, y));
+
+        QString text = QString::number(y, 'f', effectiveGridStep < 0.1 ? 2 :
+                                                   effectiveGridStep < 1 ? 1 : 0);
+        QRect textRect = painter.fontMetrics().boundingRect(text);
+
+        // Рисуем слева от оси Y
+        painter.drawText(screenPos.x() - textRect.width() - 5,
+                        screenPos.y() + textRect.height()/4,
+                        text);
+    }
+
+    // Подписи осей
+    QPointF originScreen = worldToScreenWithOffset(QPointF(0, 0));
+    painter.drawText(originScreen.x() + 5, originScreen.y() - 5, "0");
+
+    // Подписи X и Y в углах
+    QPointF xEndScreen = worldToScreenWithOffset(QPointF(visibleRight * 0.9, 0));
+    painter.drawText(xEndScreen.x() - 10, xEndScreen.y() - 10, "X");
+
+    QPointF yEndScreen = worldToScreenWithOffset(QPointF(0, visibleTop * 0.9));
+    painter.drawText(yEndScreen.x() + 10, yEndScreen.y() + 15, "Y");
+
+    painter.restore();
+}
 void ShapesWidget::drawShapes(QPainter &painter) {
     auto shapes = controller->getShapes();
     for (const Shape &shape : shapes) {
@@ -343,22 +426,23 @@ void ShapesWidget::drawShapes(QPainter &painter) {
     }
 }
 
+
+
 void ShapesWidget::drawDebugInfo(QPainter &painter) {
     painter.setPen(Qt::blue);
     painter.drawText(10, 20, QString("Масштаб: %1").arg(transformer.getScale(), 0, 'f', 2));
     painter.drawText(10, 40, QString("Фигур: %1").arg(controller->shapeCount()));
     painter.drawText(10, 60, QString("Область: %1 см").arg(worldSize, 0, 'f', 0));
+    painter.drawText(10, 80, QString("Шаг сетки: %1 см").arg(effectiveGridStep, 0, 'f', 2));
 
-    // Отображаем текущие координаты мыши в сантиметрах
     if (underMouse()) {
         QPoint mousePos = mapFromGlobal(QCursor::pos());
         QPointF worldPos = screenToWorldWithOffset(mousePos);
-        painter.drawText(10, 80, QString("X: %1 см, Y: %2 см")
+        painter.drawText(10, 100, QString("X: %1 см, Y: %2 см")
                          .arg(worldPos.x(), 0, 'f', 1)
                          .arg(worldPos.y(), 0, 'f', 1));
     }
 }
-
 void ShapesWidget::mousePressEvent(QMouseEvent *event) {
     QPointF worldPoint = screenToWorldWithOffset(event->pos());
 
@@ -400,21 +484,24 @@ void ShapesWidget::mouseReleaseEvent(QMouseEvent *event) {
         update();
     }
 }
-
+void ShapesWidget::updateGridParameters() {
+    if (autoAdjustGrid) {
+        effectiveGridStep = calculateOptimalGridStep() * gridDensity;
+    } else {
+        effectiveGridStep = gridStep;
+    }
+}
 void ShapesWidget::wheelEvent(QWheelEvent *event) {
-    // Масштабирование через изменение размера отображаемой области
     qreal zoomFactor = 1.1;
     if (event->angleDelta().y() < 0) {
-        // Увеличиваем область (уменьшаем масштаб)
         worldSize *= zoomFactor;
     } else {
-        // Уменьшаем область (увеличиваем масштаб)
         worldSize /= zoomFactor;
     }
 
-    // Ограничиваем минимальный и максимальный размер области
     worldSize = qMax(1.0, qMin(500.0, worldSize));
 
+    updateGridParameters();
     update();
     emit viewChanged();
 }

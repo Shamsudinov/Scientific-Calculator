@@ -68,6 +68,11 @@ public:
     // Управление размером отображаемой области
     void setWorldSize(qreal size);  // размер области в см при масштабе 1
     qreal getWorldSize() const;
+
+    // Новые методы для масштабирования сетки
+    void setAutoAdjustGrid(bool enabled);
+    bool isAutoAdjustGrid() const;
+    void setGridDensity(qreal density); // плотность сетки (1.0 = нормальная)
 signals:
     void shapeAdded();
     void shapesCleared();
@@ -90,6 +95,13 @@ private:
     void drawCoordinateGrid(QPainter &painter);
     void drawAxes(QPainter &painter);
     void drawGridLines(QPainter &painter);
+    void drawGridLabels(QPainter &painter);
+
+    // Методы для автоматической подстройки сетки
+    void updateGridParameters();
+    qreal calculateOptimalGridStep() const;
+    QVector<qreal> getGridLinePositions(qreal min, qreal max, qreal step) const;
+
     void updateViewForWorldSize();
     QPointF screenToWorldWithOffset(const QPoint &screenPoint) const;
     QPointF worldToScreenWithOffset(const QPointF &worldPoint) const;
@@ -105,11 +117,15 @@ private:
 
     // Параметры координатной сетки
     bool gridEnabled;
+    bool autoAdjustGrid;  // Автоматическая подстройка сетки
     qreal gridStep;  // шаг сетки в мировых координатах (1.0 = 1 см)
+    qreal gridDensity;    // плотность сетки (умножается на оптимальный шаг)
     QColor gridColor;
     QColor axesColor;
     QFont coordinateFont;
     qreal worldSize;  // по умолчанию 50 см
+    // Кэшированные параметры для отрисовки
+    qreal effectiveGridStep;  // эффективный шаг сетки с учетом масштаба
 };
 
 #endif // SHAPESWIDGET_H
