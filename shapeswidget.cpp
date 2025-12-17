@@ -480,10 +480,12 @@ bool ShapesWidget::isDrawingEnabled() const {
     return drawingEnabled;
 }
 
-void ShapesWidget::addShapeWithParameters(ShapeType type,
-                                          const QVector<QPointF> &points,
-                                          const QColor &color,
-                                          int thickness) {
+void ShapesWidget::addShapeWithParameters(ShapeType type,const QVector<QPointF> &points,const QColor &color,int thickness) {
+
+    if (points.isEmpty()) {
+        QMessageBox::warning(this, "Ошибка", "Нет точек для создания фигуры");
+        return;
+    }
     if (points.size() < getRequiredPointsCount(type)) {
         QMessageBox::warning(this, "Ошибка",
             QString("Для фигуры '%1' требуется минимум %2 точек")

@@ -97,86 +97,34 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->historyList, &QListWidget::itemDoubleClicked, this, &MainWindow::useHistoryItem);
     connect(ui->pbtn_recalculate, &QPushButton::clicked,this, &MainWindow::recalculateHistoryItem);
 
-//    setupGeometryTab();
+    connect(ui->pushButton, &QPushButton::clicked, this, &MainWindow::onAddShapeClicked);
+    connect(ui->cbox_shapetype, &QComboBox::currentIndexChanged, this, &MainWindow::onShapeTypeChanged);
+
+    // Подключаем сигналы для изменения цвета и толщины
+    connect(ui->cbox_color, &QComboBox::currentIndexChanged, this, &MainWindow::onColorChanged);
+    connect(ui->spin_thickness, &QSpinBox::valueChanged, this, &MainWindow::onThicknessChanged);
+
+    // Подключаем сигналы изменения значений в полях ввода точек
+    connect(ui->edit_x1, &QLineEdit::textChanged, this, &MainWindow::onPointValueChanged);
+    connect(ui->edit_y1, &QLineEdit::textChanged, this, &MainWindow::onPointValueChanged);
+    connect(ui->edit_x2, &QLineEdit::textChanged, this, &MainWindow::onPointValueChanged);
+    connect(ui->edit_y2, &QLineEdit::textChanged, this, &MainWindow::onPointValueChanged);
+    connect(ui->edit_x3, &QLineEdit::textChanged, this, &MainWindow::onPointValueChanged);
+    connect(ui->edit_y3, &QLineEdit::textChanged, this, &MainWindow::onPointValueChanged);
+    connect(ui->edit_x4, &QLineEdit::textChanged, this, &MainWindow::onPointValueChanged);
+    connect(ui->edit_y4, &QLineEdit::textChanged, this, &MainWindow::onPointValueChanged);
+    connect(ui->edit_x5, &QLineEdit::textChanged, this, &MainWindow::onPointValueChanged);
+    connect(ui->edit_y5, &QLineEdit::textChanged, this, &MainWindow::onPointValueChanged);
+
+    // Инициализируем начальные значения
+    ui->widget->setDrawingEnabled(false); // Отключаем рисование мышью
+    updateShapeSettings();
 }
 
 MainWindow::~MainWindow(){
 
     delete updateTimer;
     delete ui;
-}
-
-void MainWindow::setupGeometryTab() {
-    // Получаем доступ к виджетам
-    QComboBox *shapesCombo = ui->cbox_shapes;
-    QPushButton *addButton = ui->pushButton;
-    QGroupBox *settingsGroup = ui->curr_shape_setting;
-
-    // Создаем основной layout для группы настроек
-    QVBoxLayout *mainLayout = new QVBoxLayout(settingsGroup);
-
-    // 1. Выбор типа фигуры
-    QLabel *shapeLabel = new QLabel("Тип фигуры:");
-    mainLayout->addWidget(shapeLabel);
-
-    shapesCombo->clear();
-    QVector<QString> availableShapes = ShapesWidget::getAvailableShapes();
-    for (const QString &shapeName : availableShapes) {
-        shapesCombo->addItem(shapeName);
-    }
-
-    // 2. Настройка цвета
-    QHBoxLayout *colorLayout = new QHBoxLayout();
-    QLabel *colorLabel = new QLabel("Цвет:");
-    colorButton = new QPushButton();
-    colorButton->setFixedSize(30, 30);
-    colorButton->setStyleSheet("background-color: #000000;");
-    colorLayout->addWidget(colorLabel);
-    colorLayout->addWidget(colorButton);
-    colorLayout->addStretch();
-    mainLayout->addLayout(colorLayout);
-
-    // 3. Настройка толщины
-    QHBoxLayout *thicknessLayout = new QHBoxLayout();
-    QLabel *thicknessLabel = new QLabel("Толщина:");
-    thicknessSpinBox = new QSpinBox();
-    thicknessSpinBox->setRange(1, 20);
-    thicknessSpinBox->setValue(2);
-    thicknessLayout->addWidget(thicknessLabel);
-    thicknessLayout->addWidget(thicknessSpinBox);
-    thicknessLayout->addStretch();
-    mainLayout->addLayout(thicknessLayout);
-
-    // 4. Группа для точек
-    pointsGroupBox = new QGroupBox("Точки фигуры");
-    QVBoxLayout *pointsLayout = new QVBoxLayout(pointsGroupBox);
-    mainLayout->addWidget(pointsGroupBox);
-
-    // 5. Режим рисования мышью
-    drawingModeCheckBox = new QCheckBox("Режим рисования мышью");
-    drawingModeCheckBox->setChecked(false);
-    mainLayout->addWidget(drawingModeCheckBox);
-
-    // 6. Кнопка добавления
-    mainLayout->addWidget(addButton);
-
-    // 7. Отступ
-    mainLayout->addStretch();
-
-    // Подключаем сигналы
-    connect(shapesCombo, SIGNAL(currentIndexChanged(int)),
-            this, SLOT(onShapeTypeChanged(int)));
-    connect(colorButton, &QPushButton::clicked,
-            this, &MainWindow::onColorChanged);
-    connect(thicknessSpinBox, SIGNAL(valueChanged(int)),
-            this, SLOT(onThicknessChanged(int)));
-    connect(drawingModeCheckBox, &QCheckBox::toggled,
-            this, &MainWindow::onDrawingModeToggled);
-    connect(addButton, &QPushButton::clicked,
-            this, &MainWindow::onAddShapeClicked);
-
-    // Инициализируем настройки для первой фигуры
-    onShapeTypeChanged(0);
 }
 
 void MainWindow::onBtnClearClicked(){
@@ -359,122 +307,124 @@ void MainWindow::onHistoryEditTextChanged(const QString& text) {
     updateTimer->start(UPDATE_DELAY_MS);
 }
 // Слот изменения типа фигуры
-void MainWindow::onShapeTypeChanged(int index)
-{
-    ShapesWidget *shapesWidget = ui->widget;
-    ShapeType shapeType = static_cast<ShapeType>(index);
+void MainWindow::onShapeTypeChanged(int index){
 
     // Устанавливаем текущую фигуру
-    shapesWidget->setCurrentShape(shapeType);
+    ui->widget->setCurrentShape(static_cast<ShapeType>(index));
 
     // Обновляем настройки UI
     updateShapeSettings();
 }
 // Обновление настроек ввода точек
 void MainWindow::updateShapeSettings() {
-    ShapesWidget *shapesWidget = ui->widget;
-    ShapeType currentType = shapesWidget->getCurrentShape().getType();
+
+    ShapeType currentType = ui->widget->getCurrentShape().getType();
     int requiredPoints = ShapesWidget::getRequiredPointsCount(currentType);
 
-    // Очищаем старые поля
-    clearPointInputs();
+    // Включаем/отключаем поля ввода в зависимости от типа фигуры
+    ui->label_vertex1->setEnabled(requiredPoints >= 1);
+    ui->edit_x1->setEnabled(requiredPoints >= 1);
+    ui->edit_y1->setEnabled(requiredPoints >= 1);
 
-    QVBoxLayout *pointsLayout = qobject_cast<QVBoxLayout*>(pointsGroupBox->layout());
+    ui->label_vertex2->setEnabled(requiredPoints >= 2);
+    ui->edit_x2->setEnabled(requiredPoints >= 2);
+    ui->edit_y2->setEnabled(requiredPoints >= 2);
 
-    for (int i = 0; i < requiredPoints; i++) {
-        QHBoxLayout *pointLayout = new QHBoxLayout();
+    ui->label_vertex3->setEnabled(requiredPoints >= 3);
+    ui->edit_x3->setEnabled(requiredPoints >= 3);
+    ui->edit_y3->setEnabled(requiredPoints >= 3);
 
-        QLabel *pointLabel = new QLabel(QString("Точка %1:").arg(i + 1));
+    ui->label_vertex4->setEnabled(requiredPoints >= 4);
+    ui->edit_x4->setEnabled(requiredPoints >= 4);
+    ui->edit_y4->setEnabled(requiredPoints >= 4);
 
-        QDoubleSpinBox *xSpinBox = new QDoubleSpinBox();
-        xSpinBox->setRange(-1000, 1000);
-        xSpinBox->setValue(i * 50); // Смещаем точки для наглядности
-        xSpinBox->setPrefix("X: ");
+    ui->label_vertex5->setEnabled(requiredPoints >= 5);
+    ui->edit_x5->setEnabled(requiredPoints >= 5);
+    ui->edit_y5->setEnabled(requiredPoints >= 5);
 
-        QDoubleSpinBox *ySpinBox = new QDoubleSpinBox();
-        ySpinBox->setRange(-1000, 1000);
-        ySpinBox->setValue(0);
-        ySpinBox->setPrefix("Y: ");
+    // Задаем placeholder'ы
+    ui->edit_x1->setPlaceholderText("X1");
+    ui->edit_y1->setPlaceholderText("Y1");
+    ui->edit_x2->setPlaceholderText("X2");
+    ui->edit_y2->setPlaceholderText("Y2");
+    ui->edit_x3->setPlaceholderText("X3");
+    ui->edit_y3->setPlaceholderText("Y3");
+    ui->edit_x4->setPlaceholderText("X4");
+    ui->edit_y4->setPlaceholderText("Y4");
+    ui->edit_x5->setPlaceholderText("X5");
+    ui->edit_y5->setPlaceholderText("Y5");
 
-        pointLayout->addWidget(pointLabel);
-        pointLayout->addWidget(xSpinBox);
-        pointLayout->addWidget(ySpinBox);
-
-        pointsLayout->addLayout(pointLayout);
-
-        pointXInputs.append(xSpinBox);
-        pointYInputs.append(ySpinBox);
-
-        // Подключаем сигналы изменения значений
-        connect(xSpinBox, SIGNAL(valueChanged(double)),
-                this, SLOT(onPointValueChanged()));
-        connect(ySpinBox, SIGNAL(valueChanged(double)),
-                this, SLOT(onPointValueChanged()));
-    }
-
-    pointsLayout->addStretch();
 }
 // Очистка полей ввода точек
 void MainWindow::clearPointInputs() {
-    // Отключаем сигналы
-    for (QDoubleSpinBox *spinBox : pointXInputs) {
-        disconnect(spinBox, nullptr, this, nullptr);
-    }
-    for (QDoubleSpinBox *spinBox : pointYInputs) {
-        disconnect(spinBox, nullptr, this, nullptr);
-    }
-
-    pointXInputs.clear();
-    pointYInputs.clear();
-
-    // Удаляем все дочерние элементы
-    QLayout *layout = pointsGroupBox->layout();
-    if (layout) {
-        QLayoutItem *item;
-        while ((item = layout->takeAt(0)) != nullptr) {
-            if (item->widget()) {
-                item->widget()->deleteLater();
-            }
-            if (item->layout()) {
-                QLayout *childLayout = item->layout();
-                QLayoutItem *childItem;
-                while ((childItem = childLayout->takeAt(0)) != nullptr) {
-                    if (childItem->widget()) {
-                        childItem->widget()->deleteLater();
-                    }
-                    delete childItem;
-                }
-                delete childLayout;
-            }
-            delete item;
-        }
-    }
+    ui->edit_x1->clear();
+    ui->edit_y1->clear();
+    ui->edit_x2->clear();
+    ui->edit_y2->clear();
+    ui->edit_x3->clear();
+    ui->edit_y3->clear();
+    ui->edit_x4->clear();
+    ui->edit_y4->clear();
+    ui->edit_x5->clear();
+    ui->edit_y5->clear();
 }
 
-// Получение точек из полей ввода
+// Обновленный метод получения точек
 QVector<QPointF> MainWindow::getPointsFromInputs() const {
     QVector<QPointF> points;
 
-    for (int i = 0; i < pointXInputs.size(); i++) {
-        double x = pointXInputs[i]->value();
-        double y = pointYInputs[i]->value();
-        points.append(QPointF(x, y));
+    ShapeType currentType = ui->widget->getCurrentShape().getType();
+    int requiredPoints = ShapesWidget::getRequiredPointsCount(currentType);
+
+    // Добавляем точки в зависимости от требуемого количества
+    if (requiredPoints >= 1 && !ui->edit_x1->text().isEmpty() && !ui->edit_y1->text().isEmpty()) {
+        double x1 = ui->edit_x1->text().toDouble();
+        double y1 = ui->edit_y1->text().toDouble();
+        points.append(QPointF(x1, y1));
+    }
+
+    if (requiredPoints >= 2 && !ui->edit_x2->text().isEmpty() && !ui->edit_y2->text().isEmpty()) {
+        double x2 = ui->edit_x2->text().toDouble();
+        double y2 = ui->edit_y2->text().toDouble();
+        points.append(QPointF(x2, y2));
+    }
+
+    if (requiredPoints >= 3 && !ui->edit_x3->text().isEmpty() && !ui->edit_y3->text().isEmpty()) {
+        double x3 = ui->edit_x3->text().toDouble();
+        double y3 = ui->edit_y3->text().toDouble();
+        points.append(QPointF(x3, y3));
+    }
+
+    if (requiredPoints >= 4 && !ui->edit_x4->text().isEmpty() && !ui->edit_y4->text().isEmpty()) {
+        double x4 = ui->edit_x4->text().toDouble();
+        double y4 = ui->edit_y4->text().toDouble();
+        points.append(QPointF(x4, y4));
+    }
+
+    if (requiredPoints >= 5 && !ui->edit_x5->text().isEmpty() && !ui->edit_y5->text().isEmpty()) {
+        double x5 = ui->edit_x5->text().toDouble();
+        double y5 = ui->edit_y5->text().toDouble();
+        points.append(QPointF(x5, y5));
     }
 
     return points;
 }
 
-// Слот изменения цвета
+// Обновленный слот изменения цвета
 void MainWindow::onColorChanged() {
-    QColor color = QColorDialog::getColor(Qt::black, this, "Выберите цвет");
-    if (color.isValid()) {
-        colorButton->setStyleSheet(
-            QString("background-color: %1; border: 1px solid gray;")
-            .arg(color.name()));
+    int index = ui->cbox_color->currentIndex();
+    QColor color;
 
-        ShapesWidget *shapesWidget = ui->widget;
-        shapesWidget->setCurrentColor(color);
+    switch(index) {
+        case 0: color = Qt::red; break;
+        case 1: color = Qt::green; break;
+        case 2: color = Qt::blue; break;
+        case 3: color = Qt::yellow; break;
+        case 4: color = Qt::black; break;
+        default: color = Qt::black;
     }
+
+    ui->widget->setCurrentColor(color);
 }
 // Слот изменения значений точек
 void MainWindow::onPointValueChanged() {
@@ -488,28 +438,50 @@ void MainWindow::onDrawingModeToggled(bool checked) {
         checked ? "Режим рисования мышью включен" : "Режим рисования мышью выключен",
         2000);
 }
-// Слот добавления фигуры
+// Обновленный слот добавления фигуры
 void MainWindow::onAddShapeClicked() {
-    ShapesWidget *shapesWidget = ui->widget;
-    ShapeType currentType = shapesWidget->getCurrentShape().getType();
-
-    // Получаем параметры
-    QColor color = QColor(colorButton->palette().color(QPalette::Button));
-    int thickness = thicknessSpinBox->value();
+    ShapeType currentType = ui->widget->getCurrentShape().getType();
+    int requiredPoints = ShapesWidget::getRequiredPointsCount(currentType);
     QVector<QPointF> points = getPointsFromInputs();
 
+    // Проверяем, что введено достаточное количество точек
+    if (points.size() < requiredPoints) {
+        QMessageBox::warning(this, "Ошибка",
+            QString("Для фигуры '%1' требуется %2 точек. Введено только %3.")
+            .arg(Shape::shapeTypeToString(currentType))
+            .arg(requiredPoints)
+            .arg(points.size()));
+        return;
+    }
+
+    // Получаем цвет из ComboBox
+    int colorIndex = ui->cbox_color->currentIndex();
+    QColor color;
+    switch(colorIndex) {
+        case 0: color = Qt::red; break;
+        case 1: color = Qt::green; break;
+        case 2: color = Qt::blue; break;
+        case 3: color = Qt::yellow; break;
+        case 4: color = Qt::black; break;
+        default: color = Qt::black;
+    }
+
+    // Получаем толщину
+    int thickness = ui->spin_thickness->value();
+
     // Добавляем фигуру
-    shapesWidget->addShapeWithParameters(currentType, points, color, thickness);
+    ui->widget->addShapeWithParameters(currentType, points, color, thickness);
 
     ui->statusbar->showMessage(
         QString("Фигура '%1' добавлена")
         .arg(Shape::shapeTypeToString(currentType)),
         2000);
 }
+
 // Слот изменения толщины
 void MainWindow::onThicknessChanged(int value) {
-    ShapesWidget *shapesWidget = ui->widget;
-    shapesWidget->setCurrentThickness(value);
+
+    ui->widget->setCurrentThickness(value);
 }
 
 // Таймер для отложенного перерасчета

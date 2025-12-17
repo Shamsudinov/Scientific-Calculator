@@ -103,13 +103,5 @@ private:
     const int MAX_HISTORY_ITEMS = 20;
     const int UPDATE_DELAY_MS = 500; // Задержка перед перерасчетом в мс
 
-    // Виджеты геометрии (можно добавить указатели, если нужно)
-    QSpinBox *thicknessSpinBox;
-    QColorDialog *colorDialog;
-    QPushButton *colorButton;
-    QCheckBox *drawingModeCheckBox;
-    QVector<QDoubleSpinBox*> pointXInputs;
-    QVector<QDoubleSpinBox*> pointYInputs;
-    QGroupBox *pointsGroupBox;
 };
 #endif // MAINWINDOW_H
