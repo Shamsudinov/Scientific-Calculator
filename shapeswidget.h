@@ -54,6 +54,20 @@ public:
 
     // Получить требуемое количество точек для фигуры
     static int getRequiredPointsCount(ShapeType);
+
+    // Управление координатной сеткой
+    void setGridEnabled(bool enabled);
+    bool isGridEnabled() const;
+    void setGridStep(qreal step);  // шаг сетки в мировых координатах
+    qreal getGridStep() const;
+    void setGridColor(const QColor &color);
+    QColor getGridColor() const;
+    void setAxesColor(const QColor &color);
+    QColor getAxesColor() const;
+
+    // Управление размером отображаемой области
+    void setWorldSize(qreal size);  // размер области в см при масштабе 1
+    qreal getWorldSize() const;
 signals:
     void shapeAdded();
     void shapesCleared();
@@ -65,12 +79,21 @@ protected:
     void mouseMoveEvent(QMouseEvent *) override;
     void mouseReleaseEvent(QMouseEvent *) override;
     void wheelEvent(QWheelEvent *) override;
+    void resizeEvent(QResizeEvent *) override;
 
 private:
     void setupUI();
     void drawShapes(QPainter &);
     void drawCurrentShape(QPainter &);
     void drawDebugInfo(QPainter &);
+
+    void drawCoordinateGrid(QPainter &painter);
+    void drawAxes(QPainter &painter);
+    void drawGridLines(QPainter &painter);
+    void updateViewForWorldSize();
+    QPointF screenToWorldWithOffset(const QPoint &screenPoint) const;
+    QPointF worldToScreenWithOffset(const QPointF &worldPoint) const;
+    QPointF calculateGridOrigin() const;
 
     class DrawingController *controller;
     ViewTransformer transformer;
@@ -79,6 +102,14 @@ private:
     bool isPanning;
     QPoint lastPanPoint;
     bool drawingEnabled;  // Флаг разрешения рисования
+
+    // Параметры координатной сетки
+    bool gridEnabled;
+    qreal gridStep;  // шаг сетки в мировых координатах (1.0 = 1 см)
+    QColor gridColor;
+    QColor axesColor;
+    QFont coordinateFont;
+    qreal worldSize;  // по умолчанию 50 см
 };
 
 #endif // SHAPESWIDGET_H

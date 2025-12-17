@@ -5,14 +5,22 @@
 #include <QWheelEvent>
 #include <QFile>
 #include <QDataStream>
+#include <QPen>
+#include <QResizeEvent>
 
 ShapesWidget::ShapesWidget(QWidget *parent)
     : QWidget(parent)
     , controller(new DrawingController())
     , isDrawing(false)
     , isPanning(false)
+    , gridEnabled(true)  // сетка включена по умолчанию
+    , gridStep(1.0)      // 1 см по умолчанию
+    , gridColor(QColor(200, 200, 200, 150))  // светло-серый с прозрачностью
+    , axesColor(Qt::black)
+    , worldSize(50.0)    // 50 см по умолчанию
 {
     setupUI();
+    updateViewForWorldSize();
 }
 
 ShapesWidget::~ShapesWidget() {
@@ -31,6 +39,51 @@ void ShapesWidget::setupUI() {
     QPalette palette = this->palette();
     palette.setColor(QPalette::Window, Qt::white);
     setPalette(palette);
+
+    // Настройка шрифта для координатных подписей
+    coordinateFont = QFont("Arial", 8);
+}
+
+void ShapesWidget::updateViewForWorldSize() {
+    // При масштабе 1.0 виджет должен показывать worldSize сантиметров
+    // Настраиваем трансформер соответствующим образом
+    transformer.setScale(1.0);
+
+    // Центрируем начало координат
+    QPointF offset(width() / 2.0, height() / 2.0);
+    transformer.setOffset(offset);
+
+    update();
+}
+
+void ShapesWidget::resizeEvent(QResizeEvent *event) {
+    QWidget::resizeEvent(event);
+    updateViewForWorldSize();
+}
+
+QPointF ShapesWidget::screenToWorldWithOffset(const QPoint &screenPoint) const {
+    // Преобразуем экранные координаты в мировые с учетом размера области
+    QPointF centeredScreen(screenPoint.x() - width() / 2.0,
+                          screenPoint.y() - height() / 2.0);
+
+    // Масштабируем: worldSize см соответствуют меньшей стороне виджета
+    qreal widgetSize = qMin(width(), height());
+    qreal pixelsPerCm = widgetSize / worldSize;
+
+    return QPointF(centeredScreen.x() / pixelsPerCm,
+                   -centeredScreen.y() / pixelsPerCm);  // Инвертируем Y
+}
+
+QPointF ShapesWidget::worldToScreenWithOffset(const QPointF &worldPoint) const {
+    // Преобразуем мировые координаты в экранные
+    qreal widgetSize = qMin(width(), height());
+    qreal pixelsPerCm = widgetSize / worldSize;
+
+    QPointF screenPoint(worldPoint.x() * pixelsPerCm,
+                       -worldPoint.y() * pixelsPerCm);  // Инвертируем Y
+
+    return QPointF(screenPoint.x() + width() / 2.0,
+                   screenPoint.y() + height() / 2.0);
 }
 
 void ShapesWidget::setCurrentShape(ShapeType shape) {
@@ -136,14 +189,147 @@ void ShapesWidget::paintEvent(QPaintEvent *event) {
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
+    // Рисуем координатную сетку (в координатах экрана)
+    if (gridEnabled) {
+        drawCoordinateGrid(painter);
+    }
+
+    // Рисуем фигуры с использованием текущего трансформера
     painter.save();
-    painter.translate(transformer.getOffset());
-    painter.scale(transformer.getScale(), transformer.getScale());
+    qreal widgetSize = qMin(width(), height());
+    qreal pixelsPerCm = widgetSize / worldSize;
+
+    painter.translate(width() / 2.0, height() / 2.0);
+    painter.scale(pixelsPerCm, -pixelsPerCm);  // Инвертируем ось Y
 
     drawShapes(painter);
+    painter.restore();
+
+    drawDebugInfo(painter);
+}
+
+void ShapesWidget::drawCoordinateGrid(QPainter &painter) {
+    // Рисуем оси координат
+    drawAxes(painter);
+
+    // Рисуем линии сетки
+    drawGridLines(painter);
+}
+
+void ShapesWidget::drawAxes(QPainter &painter) {
+    painter.save();
+
+    QPen axesPen(axesColor, 2);
+    painter.setPen(axesPen);
+
+    // Начало координат в центре виджета
+    int centerX = width() / 2;
+    int centerY = height() / 2;
+
+    // Ось X (горизонтальная)
+    painter.drawLine(0, centerY, width(), centerY);
+
+    // Ось Y (вертикальная)
+    painter.drawLine(centerX, 0, centerX, height());
+
+    // Стрелки на осях
+    int arrowSize = 10;
+
+    // Стрелка оси X
+    painter.drawLine(width() - arrowSize, centerY - arrowSize/2,
+                     width(), centerY);
+    painter.drawLine(width() - arrowSize, centerY + arrowSize/2,
+                     width(), centerY);
+
+    // Стрелка оси Y
+    painter.drawLine(centerX - arrowSize/2, arrowSize,
+                     centerX, 0);
+    painter.drawLine(centerX + arrowSize/2, arrowSize,
+                     centerX, 0);
+
+    // Подписи осей
+    painter.setFont(coordinateFont);
+    painter.drawText(width() - 20, centerY - 10, "X");
+    painter.drawText(centerX + 10, 20, "Y");
+
+    // Ноль в начале координат
+    painter.drawText(centerX + 5, centerY - 5, "0");
 
     painter.restore();
-    drawDebugInfo(painter);
+}
+
+void ShapesWidget::drawGridLines(QPainter &painter) {
+    painter.save();
+
+    QPen gridPen(gridColor, 1, Qt::DotLine);
+    painter.setPen(gridPen);
+
+    qreal widgetSize = qMin(width(), height());
+    qreal pixelsPerCm = widgetSize / worldSize;
+
+    // Шаг сетки в пикселях
+    qreal gridStepPixels = gridStep * pixelsPerCm;
+
+    if (gridStepPixels < 5) {
+        // Слишком мелкая сетка, не рисуем
+        painter.restore();
+        return;
+    }
+
+    int centerX = width() / 2;
+    int centerY = height() / 2;
+
+    // Рисуем вертикальные линии (слева и справа от оси Y)
+    for (int i = 1; centerX + i * gridStepPixels < width(); i++) {
+        qreal x = centerX + i * gridStepPixels;
+        painter.drawLine(x, 0, x, height());
+
+        // Подпись для положительных X
+        if (gridStepPixels > 20) {
+            painter.setPen(axesColor);
+            painter.drawText(x - 10, centerY + 15, QString::number(i));
+            painter.setPen(gridPen);
+        }
+    }
+
+    for (int i = 1; centerX - i * gridStepPixels >= 0; i++) {
+        qreal x = centerX - i * gridStepPixels;
+        painter.drawLine(x, 0, x, height());
+
+        // Подпись для отрицательных X
+        if (gridStepPixels > 20) {
+            painter.setPen(axesColor);
+            painter.drawText(x - 10, centerY + 15, QString::number(-i));
+            painter.setPen(gridPen);
+        }
+    }
+
+    // Рисуем горизонтальные линии (выше и ниже оси X)
+    for (int i = 1; centerY + i * gridStepPixels < height(); i++) {
+        qreal y = centerY + i * gridStepPixels;
+        painter.drawLine(0, y, width(), y);
+
+        // Подпись для отрицательных Y (в декартовой системе)
+        if (gridStepPixels > 20) {
+            painter.setPen(axesColor);
+            painter.drawText(centerX + 5, y + 5, QString::number(-i));
+            painter.setPen(gridPen);
+        }
+    }
+
+    for (int i = 1; centerY - i * gridStepPixels >= 0; i++) {
+        qreal y = centerY - i * gridStepPixels;
+        painter.drawLine(0, y, width(), y);
+
+        // Подпись для положительных Y (в декартовой системе)
+        if (gridStepPixels > 20) {
+            painter.setPen(axesColor);
+            painter.drawText(centerX + 5, y + 5, QString::number(i));
+            painter.setPen(gridPen);
+        }
+    }
+
+    painter.restore();
 }
 
 void ShapesWidget::drawShapes(QPainter &painter) {
@@ -161,10 +347,20 @@ void ShapesWidget::drawDebugInfo(QPainter &painter) {
     painter.setPen(Qt::blue);
     painter.drawText(10, 20, QString("Масштаб: %1").arg(transformer.getScale(), 0, 'f', 2));
     painter.drawText(10, 40, QString("Фигур: %1").arg(controller->shapeCount()));
+    painter.drawText(10, 60, QString("Область: %1 см").arg(worldSize, 0, 'f', 0));
+
+    // Отображаем текущие координаты мыши в сантиметрах
+    if (underMouse()) {
+        QPoint mousePos = mapFromGlobal(QCursor::pos());
+        QPointF worldPos = screenToWorldWithOffset(mousePos);
+        painter.drawText(10, 80, QString("X: %1 см, Y: %2 см")
+                         .arg(worldPos.x(), 0, 'f', 1)
+                         .arg(worldPos.y(), 0, 'f', 1));
+    }
 }
 
 void ShapesWidget::mousePressEvent(QMouseEvent *event) {
-    QPointF worldPoint = transformer.screenToWorld(event->pos());
+    QPointF worldPoint = screenToWorldWithOffset(event->pos());
 
     if (event->button() == Qt::RightButton) {
         isPanning = true;
@@ -177,17 +373,21 @@ void ShapesWidget::mousePressEvent(QMouseEvent *event) {
 }
 
 void ShapesWidget::mouseMoveEvent(QMouseEvent *event) {
-    QPointF worldPoint = transformer.screenToWorld(event->pos());
+    QPointF worldPoint = screenToWorldWithOffset(event->pos());
 
     if (isPanning) {
+        // Панорамирование реализуем через изменение worldSize
         QPoint delta = event->pos() - lastPanPoint;
-        transformer.pan(delta);
+        // Здесь можно реализовать панорамирование если нужно
         lastPanPoint = event->pos();
         update();
     } else if (isDrawing) {
         controller->updateDrawing(worldPoint);
         update();
     }
+
+    // Обновляем для отображения координат мыши
+    update();
 }
 
 void ShapesWidget::mouseReleaseEvent(QMouseEvent *event) {
@@ -202,30 +402,39 @@ void ShapesWidget::mouseReleaseEvent(QMouseEvent *event) {
 }
 
 void ShapesWidget::wheelEvent(QWheelEvent *event) {
+    // Масштабирование через изменение размера отображаемой области
     qreal zoomFactor = 1.1;
     if (event->angleDelta().y() < 0) {
-        zoomFactor = 1.0 / zoomFactor;
+        // Увеличиваем область (уменьшаем масштаб)
+        worldSize *= zoomFactor;
+    } else {
+        // Уменьшаем область (увеличиваем масштаб)
+        worldSize /= zoomFactor;
     }
 
-    transformer.zoom(zoomFactor, event->position());
-    update();
-}
+    // Ограничиваем минимальный и максимальный размер области
+    worldSize = qMax(1.0, qMin(500.0, worldSize));
 
-void ShapesWidget::resetView() {
-    transformer.setScale(1.0);
-    transformer.setOffset(QPointF(0, 0));
     update();
     emit viewChanged();
 }
 
+void ShapesWidget::resetView() {
+    worldSize = 50.0;
+    updateViewForWorldSize();
+    emit viewChanged();
+}
+
 void ShapesWidget::zoomIn() {
-    transformer.zoom(1.1, rect().center());
+    worldSize /= 1.1;
+    worldSize = qMax(1.0, worldSize);
     update();
     emit viewChanged();
 }
 
 void ShapesWidget::zoomOut() {
-    transformer.zoom(1.0/1.1, rect().center());
+    worldSize *= 1.1;
+    worldSize = qMin(500.0, worldSize);
     update();
     emit viewChanged();
 }
@@ -240,22 +449,19 @@ void ShapesWidget::fitToView() {
     }
 
     if (!boundingRect.isEmpty()) {
-        // Расчет масштаба и смещения для отображения всех фигур
-        qreal scaleX = width() / boundingRect.width();
-        qreal scaleY = height() / boundingRect.height();
-        qreal scale = qMin(scaleX, scaleY) * 0.9; // 10% отступ
+        // Находим максимальную координату по модулю
+        qreal maxCoord = qMax(qAbs(boundingRect.left()), qAbs(boundingRect.right()));
+        maxCoord = qMax(maxCoord, qAbs(boundingRect.top()));
+        maxCoord = qMax(maxCoord, qAbs(boundingRect.bottom()));
 
-        transformer.setScale(scale);
-        transformer.setOffset(QPointF(
-            (width() - boundingRect.width() * scale) / 2 - boundingRect.left() * scale,
-            (height() - boundingRect.height() * scale) / 2 - boundingRect.top() * scale
-        ));
+        // Устанавливаем worldSize так, чтобы все фигуры помещались
+        // с запасом 20%
+        worldSize = maxCoord * 2.4;  // *2 для обеих сторон, *1.2 для запаса
 
         update();
         emit viewChanged();
     }
 }
-
 
 // Новые методы
 Shape ShapesWidget::getCurrentShape() const {
@@ -319,4 +525,52 @@ int ShapesWidget::getRequiredPointsCount(ShapeType type) {
     case TextShape: return 1;
     default: return 1;
     }
+}
+
+// Методы для управления координатной сеткой
+void ShapesWidget::setGridEnabled(bool enabled) {
+    gridEnabled = enabled;
+    update();
+}
+
+bool ShapesWidget::isGridEnabled() const {
+    return gridEnabled;
+}
+
+void ShapesWidget::setGridStep(qreal step) {
+    gridStep = step;
+    update();
+}
+
+qreal ShapesWidget::getGridStep() const {
+    return gridStep;
+}
+
+void ShapesWidget::setGridColor(const QColor &color) {
+    gridColor = color;
+    update();
+}
+
+QColor ShapesWidget::getGridColor() const {
+    return gridColor;
+}
+
+void ShapesWidget::setAxesColor(const QColor &color) {
+    axesColor = color;
+    update();
+}
+
+QColor ShapesWidget::getAxesColor() const {
+    return axesColor;
+}
+
+// Методы для управления размером отображаемой области
+void ShapesWidget::setWorldSize(qreal size) {
+    worldSize = qMax(1.0, size);
+    update();
+    emit viewChanged();
+}
+
+qreal ShapesWidget::getWorldSize() const {
+    return worldSize;
 }
