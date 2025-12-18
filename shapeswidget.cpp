@@ -567,7 +567,7 @@ bool ShapesWidget::isDrawingEnabled() const {
     return drawingEnabled;
 }
 
-void ShapesWidget::addShapeWithParameters(ShapeType type,const QVector<QPointF> &points,const QColor &color,int thickness) {
+void ShapesWidget::addShapeWithParameters(ShapeType type,const QVector<QPointF> &points,const QColor &color,qreal thickness) {
 
     if (points.isEmpty()) {
         QMessageBox::warning(this, "Ошибка", "Нет точек для создания фигуры");

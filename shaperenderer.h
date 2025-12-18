@@ -3,7 +3,7 @@
 
 #include "shape.h"
 #include <QPainter>
-
+#include <QDebug>
 class ShapeRenderer {
 public:
     static void render(QPainter &painter, const Shape &shape);

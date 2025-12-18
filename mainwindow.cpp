@@ -407,6 +407,7 @@ QVector<QPointF> MainWindow::getPointsFromInputs() const {
         points.append(QPointF(x5, y5));
     }
 
+
     return points;
 }
 
@@ -467,7 +468,7 @@ void MainWindow::onAddShapeClicked() {
     }
 
     // Получаем толщину
-    int thickness = ui->spin_thickness->value();
+    qreal thickness = ui->spin_thickness->value()*0.7;
 
     // Добавляем фигуру
     ui->widget->addShapeWithParameters(currentType, points, color, thickness);

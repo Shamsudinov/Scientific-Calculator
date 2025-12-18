@@ -47,7 +47,7 @@ public:
     bool isDrawingEnabled() const;
 
     // Методы для рисования из UI
-    void addShapeWithParameters(ShapeType , const QVector<QPointF> &, const QColor &, int);
+    void addShapeWithParameters(ShapeType , const QVector<QPointF> &, const QColor &, qreal);
 
     // Получить список доступных фигур
     static QVector<QString> getAvailableShapes();

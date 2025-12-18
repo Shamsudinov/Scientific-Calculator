@@ -1,7 +1,7 @@
 #include "shape.h"
 #include <algorithm>
 
-Shape::Shape(ShapeType type, const QColor &color, int thickness)
+Shape::Shape(ShapeType type, const QColor &color, qreal thickness)
     : type(type), color(color), thickness(thickness) {
 }
 
@@ -11,7 +11,7 @@ QVector<QPointF> Shape::getPoints() const { return points; }
 
 QColor Shape::getColor() const { return color; }
 
-int Shape::getThickness() const { return thickness; }
+qreal Shape::getThickness() const { return thickness; }
 
 void Shape::addPoint(const QPointF &point) {
     points.append(point);

@@ -55,14 +55,14 @@ void ShapeRenderer::renderEllipse(QPainter &painter, const Shape &shape) {
 }
 
 void ShapeRenderer::renderTriangle(QPainter &painter, const Shape &shape) {
+
+    const int point_a = 0;
+    const int point_b = 1;
+    const int point_c = 2;
     if (shape.pointCount() >= 2) {
-        QPointF p1 = shape.firstPoint();
-        QPointF p2 = shape.lastPoint();
-
-        QPointF p3(p1.x() + (p2.x() - p1.x()) / 2, p1.y());
+        QVector<QPointF> points = shape.getPoints();
         QPolygonF triangle;
-        triangle << p1 << p2 << p3;
-
+        triangle << points[point_a] << points[point_b] << points[point_c];
         painter.drawPolygon(triangle);
     }
 }

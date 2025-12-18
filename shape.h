@@ -19,12 +19,12 @@ enum ShapeType {
 
 class Shape {
 public:
-    Shape(ShapeType type = NoShape,const QColor &color = Qt::black,int thickness = 2);
+    Shape(ShapeType type = NoShape,const QColor &color = Qt::black,qreal thickness = 1);
 
     ShapeType getType() const;
     QVector<QPointF> getPoints() const;
     QColor getColor() const;
-    int getThickness() const;
+    qreal getThickness() const;
 
     void addPoint(const QPointF &point);
     void setLastPoint(const QPointF &point);
@@ -41,7 +41,7 @@ private:
     ShapeType type;
     QVector<QPointF> points;
     QColor color;
-    int thickness;
+    qreal thickness;
 };
 
 #endif // SHAPE_H
