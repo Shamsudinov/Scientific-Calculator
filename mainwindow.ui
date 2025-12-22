@@ -968,7 +968,7 @@ p, li { white-space: pre-wrap; }
        </attribute>
        <layout class="QGridLayout" name="gridLayout_9">
         <item row="0" column="1">
-         <widget class="ShapesWidget" name="widget" native="true"/>
+         <widget class="QWidget" name="widget" native="true"/>
         </item>
         <item row="0" column="0">
          <widget class="QGroupBox" name="gbox_cpntrol_pannel">
@@ -1246,14 +1246,6 @@ p, li { white-space: pre-wrap; }
    </property>
   </widget>
  </widget>
- <customwidgets>
-  <customwidget>
-   <class>ShapesWidget</class>
-   <extends>QWidget</extends>
-   <header location="global">shapeswidget.h</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections/>
 </ui>

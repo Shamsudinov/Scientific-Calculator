@@ -17,7 +17,7 @@
 #include <stdexcept>
 
 #include "expressioncalculator.h"
-#include "shapeswidget.h"
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -52,13 +52,6 @@ public slots:
     void onUpdateTimerTimeout();
     void onHistoryEditTextChanged(const QString&);
 
-    // Слоты для геометрии
-    void onShapeTypeChanged(int index);
-    void onAddShapeClicked();
-    void onColorChanged();
-    void onThicknessChanged(int value);
-    void onPointValueChanged();
-    void onDrawingModeToggled(bool checked);
 protected:
    virtual void keyPressEvent(QKeyEvent *);
 
@@ -73,12 +66,12 @@ private:
     void clearHistory();
     void useHistoryItem();
     void startDelayedCalculation();
-     void onHistoryTextChanged(const QString&);
-     QString formatHistoryItem(const QString&, double) const;
-     void calculateEditedExpression();
-     void editHistoryItem(int);
-     void updateHistoryDisplay();
-     void recalculateHistoryItem();
+    void onHistoryTextChanged(const QString&);
+    QString formatHistoryItem(const QString&, double) const;
+    void calculateEditedExpression();
+    void editHistoryItem(int);
+    void updateHistoryDisplay();
+    void recalculateHistoryItem();
 
 
      // Методы для геометрии
